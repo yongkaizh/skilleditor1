@@ -1,0 +1,4376 @@
+@function dbOpenCellViewByType
+@usage dbOpenCellViewByType(t_libName t_cellName t_viewName [t_mode] [t_accessMode])
+@category Database
+@parameters
+t_libName: Name of the library containing the cell.
+t_cellName: Name of the cell to open.
+t_viewName: Name of the view (e.g., "layout", "schematic").
+t_mode: Open mode: "r" (read), "w" (write), "a" (append). Default is "r".
+t_accessMode: Optional access mode for remote or managed data.
+@example
+cv = dbOpenCellViewByType("myLib" "inv" "layout" "a")
+if(cv then
+  printf("Opened %s %s %s\n" cv~>libName cv~>cellName cv~>viewName)
+  dbClose(cv)
+)
+@desc Opens a database cellview and returns its database ID (d_cellView). This is the primary function for programmatic access to design data in Virtuoso.
+
+@function dbSave
+@usage dbSave(d_cellView [t_libName] [t_cellName] [t_viewName])
+@category Database
+@parameters
+d_cellView: The database ID of the cellview to save.
+t_libName: Optional new library name (Save As).
+t_cellName: Optional new cell name (Save As).
+t_viewName: Optional new view name (Save As).
+@example
+dbSave(cv)
+dbSave(cv "newLib" "newCell" "layout")
+@desc Saves the specified cellview to disk. If library, cell, or view names are provided, it performs a "Save As" operation.
+
+@function dbClose
+@usage dbClose(d_cellView)
+@category Database
+@parameters
+d_cellView: The database ID of the cellview to close.
+@example
+dbClose(cv)
+@desc Closes the specified cellview and releases its memory. It does NOT automatically save changes; use dbSave before dbClose if persistence is needed.
+
+@function dbCreateRect
+@usage dbCreateRect(d_cellView l_layer l_bBox)
+@category Layout
+@parameters
+d_cellView: Target cellview ID.
+l_layer: Layer list, e.g., list("MET1" "drawing") or layer name string.
+l_bBox: Bounding box as a list of two points, e.g., list(0:0 10:10).
+@example
+rect = dbCreateRect(cv list("M1" "drawing") list(0:0 5:5))
+@desc Creates a rectangle shape in the specified cellview. Returns the database ID of the new shape.
+
+@function dbCreateInst
+@usage dbCreateInst(d_cellView d_master t_name l_origin t_orient [x_numInst])
+@category Layout
+@parameters
+d_cellView: Target cellview ID.
+d_master: Master cellview ID (from dbOpenCellViewByType).
+t_name: Instance name (e.g., "I0"). If nil, a name is generated.
+l_origin: Placement origin point, e.g., 0:0.
+t_orient: Orientation string (e.g., "R0", "R90", "MY", "MX").
+x_numInst: Optional number of instances (for arrays).
+@example
+master = dbOpenCellViewByType("analogLib" "nmos" "symbol")
+inst = dbCreateInst(cv master "M1" 10:20 "R0")
+@desc Creates an instance of the master cellview in the target cellview at the specified location and orientation.
+
+@function dbCreateLabel
+@usage dbCreateLabel(d_cellView l_layer l_origin t_text t_justify t_orient t_font n_height)
+@category Layout
+@parameters
+d_cellView: Target cellview ID.
+l_layer: Layer list or name.
+l_origin: Origin point of the label.
+t_text: The label text string.
+t_justify: Justification (e.g., "lowerLeft", "centerCenter").
+t_orient: Orientation (e.g., "R0").
+t_font: Font name (e.g., "roman", "stick").
+n_height: Text height in user units.
+@example
+dbCreateLabel(cv list("text" "drawing") 0:0 "VDD" "centerCenter" "R0" "roman" 0.5)
+@desc Creates a text label in the database.
+
+@function dbCreatePath
+@usage dbCreatePath(d_cellView l_layer l_points n_width [t_pathStyle])
+@category Layout
+@parameters
+d_cellView: Target cellview ID.
+l_layer: Layer specification.
+l_points: List of points defining the path, e.g., list(0:0 10:0 10:10).
+n_width: Width of the path.
+t_pathStyle: Optional style: "rectangle", "round", "extend".
+@example
+dbCreatePath(cv list("M2" "drawing") list(0:0 10:0 10:10) 0.2)
+@desc Creates a multi-segment path shape in the database.
+
+@function dbFindNetByName
+@usage dbFindNetByName(d_cellView t_name)
+@category Connectivity
+@parameters
+d_cellView: Cellview ID to search.
+t_name: Name of the net to find.
+@example
+net = dbFindNetByName(cv "GND")
+@desc Finds a net by its name in the specified cellview. Returns nil if not found.
+
+@function dbCreateNet
+@usage dbCreateNet(d_cellView t_name [l_signals])
+@category Connectivity
+@parameters
+d_cellView: Target cellview ID.
+t_name: Name of the new net.
+l_signals: Optional list of signals.
+@example
+net = dbCreateNet(cv "VDD")
+@desc Creates a new logical net in the cellview.
+
+@function dbCreateTerm
+@usage dbCreateTerm(d_net t_name t_direction)
+@category Connectivity
+@parameters
+d_net: Net ID to attach the terminal to.
+t_name: Terminal name.
+t_direction: "input", "output", or "inputOutput".
+@example
+term = dbCreateTerm(net "IN" "input")
+@desc Creates a terminal (interface port) for a cellview on a specific net.
+
+@function dbCreatePin
+@usage dbCreatePin(d_net d_fig [t_name])
+@category Connectivity
+@parameters
+d_net: Net ID associated with the pin.
+d_fig: Physical figure ID (rect, polygon, etc.) representing the pin.
+t_name: Optional name for the pin.
+@example
+dbCreatePin(net rect "P_IN")
+@desc Creates a physical pin by associating a shape with a net.
+
+@function leCreateContact
+@usage leCreateContact(d_cellView t_type l_origin t_orient [l_params])
+@category Layout
+@parameters
+d_cellView: Target cellview ID.
+t_type: Via/Contact type name from tech file.
+l_origin: Center location of the contact.
+t_orient: Orientation.
+l_params: Optional list of override parameters (rows, columns, etc.).
+@example
+leCreateContact(cv "M1_M2" 5:5 "R0")
+@desc Creates a contact or via instance using the Layout Editor's higher-level contact generator.
+
+@function geGetEditCellView
+@usage geGetEditCellView([w_window])
+@category Window
+@parameters
+w_window: Optional window ID. Defaults to current window.
+@example
+cv = geGetEditCellView()
+@desc Returns the cellview ID currently open for editing in the specified or current window.
+
+@function geGetSelectedSet
+@usage geGetSelectedSet([w_window])
+@category Window
+@parameters
+w_window: Optional window ID.
+@example
+objs = geGetSelectedSet()
+foreach(obj objs printf("Selected: %L\n" obj~>objType))
+@desc Returns a list of all currently selected objects in the window.
+
+@function hiCreateAppForm
+@usage hiCreateAppForm(?name s_name ?formTitle t_title ?fields l_fields ?callback t_cb)
+@category UI
+@parameters
+?name: Unique symbol name for the form.
+?formTitle: Window title for the form.
+?fields: List of field IDs created by hiCreate*Field.
+?callback: SKILL string or function to execute when OK/Apply is clicked.
+@example
+hiCreateAppForm(?name 'myDemoForm ?formTitle "Demo" ?fields list(f1 f2) ?callback "myAction()")
+@desc Creates a top-level application form container.
+
+@function hiCreateStringField
+@usage hiCreateStringField(?name s_name ?prompt t_prompt ?value t_init)
+@category UI
+@parameters
+?name: Internal field name.
+?prompt: Label text shown to the user.
+?value: Initial string value.
+@example
+f1 = hiCreateStringField(?name 'cellName ?prompt "Cell Name" ?value "inv")
+@desc Creates a string input field for use in a form.
+
+@function rodCreateRect
+@usage rodCreateRect(?name t_name ?cvId d_cv ?layer l_layer ?bBox l_bBox)
+@category Layout
+@parameters
+?name: Unique name for the ROD object.
+?cvId: Target cellview ID.
+?layer: Layer specification.
+?bBox: Bounding box.
+@example
+rodCreateRect(?name "poly_gate" ?layer "POLY" ?bBox list(0:0 1:0.5))
+@desc Creates a ROD (Relative Object Design) rectangle. ROD objects can be easily aligned and queried by name.
+
+@function rodAlign
+@usage rodAlign(?alignObj d_obj ?alignPoint t_ap ?refObj d_ref ?refPoint t_rp ?xOffset n_x ?yOffset n_y)
+@category Layout
+@parameters
+?alignObj: The ROD object to move.
+?alignPoint: Point on alignObj (e.g., "lowerLeft", "centerCenter").
+?refObj: The ROD object to align against.
+?refPoint: Point on refObj to align to.
+?xOffset: Horizontal offset.
+?yOffset: Vertical offset.
+@example
+rodAlign(?alignObj r1 ?alignPoint "ll" ?refObj r2 ?refPoint "lr" ?xOffset 0.2)
+@desc Aligns one ROD object relative to another using geometric handles.
+
+@function ddGetObj
+@usage ddGetObj(t_libName [t_cellName] [t_viewName] [t_fileName])
+@category Database
+@parameters
+t_libName: Name of the library.
+t_cellName: Optional cell name.
+t_viewName: Optional view name.
+t_fileName: Optional file name within the view.
+@example
+libObj = ddGetObj("analogLib")
+@desc Returns a Design Data (DD) object representing a library, cell, or view on disk.
+
+@function let
+@usage let(l_bindings g_expr1 [g_expr2 ...])
+@category Core
+@parameters
+l_bindings: List of local variable symbols or list(symbol value) pairs.
+g_expr: Expressions to evaluate within the local scope.
+@example
+let(( (x 10) (y 20) )
+  z = x + y
+  printf("Sum is %d\n" z)
+)
+@desc Defines a local lexical scope for variables. Recommended over 'prog' for performance when 'return' or 'go' is not needed.
+
+@function procedure
+@usage procedure(s_name(l_args) g_body ...)
+@category Core
+@parameters
+s_name: Function name symbol.
+l_args: List of argument names.
+g_body: Function implementation.
+@example
+procedure( addTwo(a b)
+  a + b
+)
+@desc Defines a new SKILL function. Unlike 'defun', 'procedure' allows for keyword arguments and optional parameter patterns.
+
+@function foreach
+@usage foreach(s_var l_list g_expr ...)
+@category List
+@parameters
+s_var: Loop variable name.
+l_list: List to iterate over.
+g_expr: Expressions to execute for each item.
+@example
+foreach(cv geGetEditCellView()~>instances
+  printf("Instance: %s\n" cv~>name)
+)
+@desc Iterates through a list, executing the body for each element.
+
+@function car
+@usage car(l_list)
+@category List
+@parameters
+l_list: The list to access.
+@example
+car(list(1 2 3)) ; Returns 1
+@desc Returns the first element of a list.
+
+@function cdr
+@usage cdr(l_list)
+@category List
+@parameters
+l_list: The list to access.
+@example
+cdr(list(1 2 3)) ; Returns (2 3)
+@desc Returns the remainder of a list after the first element.
+
+@function nth
+@usage nth(x_index l_list)
+@category List
+@parameters
+x_index: Zero-based index.
+l_list: The list to search.
+@example
+nth(1 list("A" "B" "C")) ; Returns "B"
+@desc Returns the element at the specified zero-based index in a list.
+
+@function assoc
+@usage assoc(g_key l_alist)
+@category List
+@parameters
+g_key: Key to search for.
+l_alist: Association list (list of lists).
+@example
+alist = list(list("color" "red") list("size" 10))
+val = assoc("color" alist) ; Returns ("color" "red")
+@desc Searches an association list for a sublist whose 'car' equals the key.
+
+@function member
+@usage member(g_item l_list)
+@category List
+@parameters
+g_item: Item to find.
+l_list: List to search.
+@example
+if(member(2 list(1 2 3)) print("Found it"))
+@desc Checks if an item is present in a list. Returns the tail of the list starting from that item if found, otherwise nil.
+
+@function length
+@usage length(l_list)
+@category List
+@parameters
+l_list: The list or string to measure.
+@example
+length(list(1 2 3)) ; Returns 3
+@desc Returns the number of elements in a list or characters in a string.
+
+@function strcat
+@usage strcat(t_s1 [t_s2 ...])
+@category String
+@parameters
+t_s: Strings to concatenate.
+@example
+strcat("Hello" " " "World") ; Returns "Hello World"
+@desc Concatenates multiple strings into one.
+
+@function sprintf
+@usage sprintf(s_var t_format [g_arg ...])
+@category String
+@parameters
+s_var: Symbol or nil. If nil, returns the string.
+t_format: Format string (C-style).
+g_arg: Values to format.
+@example
+msg = sprintf(nil "Coord is %d:%d" 10 20)
+@desc Formats a string. If the first argument is a symbol, it assigns the string to that variable.
+
+@function printf
+@usage printf(t_format [g_arg ...])
+@category String
+@parameters
+t_format: Format string.
+g_arg: Values to print.
+@example
+printf("Status: %s\n" "Ready")
+@desc Prints formatted text to the Command Interpreter Window (CIW).
+
+@function warn
+@usage warn(t_format [g_arg ...])
+@category String
+@parameters
+t_format: Format string.
+@example
+warn("File %s not found" fileName)
+@desc Prints a formatted warning message (highlighted) to the CIW.
+
+@function error
+@usage error(t_format [g_arg ...])
+@category String
+@parameters
+t_format: Format string.
+@example
+if(not(cv) error("Failed to open cellview!"))
+@desc Prints an error message and stops execution of the current script.
+
+@function type
+@usage type(g_obj)
+@category Core
+@parameters
+g_obj: Any SKILL object.
+@example
+type(123) ; Returns fixnum
+type("hi") ; Returns string
+type(cv) ; Returns dbobject
+@desc Returns a symbol representing the data type of the object.
+
+@function list
+@usage list([g_arg ...])
+@category List
+@parameters
+g_arg: Elements to include in the list.
+@example
+myList = list(1 "A" 3.14)
+@desc Creates a new list from the evaluated arguments.
+
+@function append
+@usage append(l_list1 l_list2)
+@category List
+@parameters
+l_list1: First list.
+l_list2: Second list.
+@example
+append(list(1 2) list(3 4)) ; Returns (1 2 3 4)
+@desc Creates a new list by joining two lists.
+
+@function reverse
+@usage reverse(l_list)
+@category List
+@parameters
+l_list: List to reverse.
+@example
+reverse(list(1 2 3)) ; Returns (3 2 1)
+@desc Returns a new list with the order of elements reversed.
+
+@function sort
+@usage sort(l_list u_compFunc)
+@category List
+@parameters
+l_list: List to sort.
+u_compFunc: Comparison function (e.g., 'alphalessp, 'lessp).
+@example
+sort(list("C" "A" "B") 'alphalessp) ; Returns ("A" "B" "C")
+@desc Sorts a list in-place using the provided comparison function.
+
+@function when
+@usage when(g_cond g_body ...)
+@category Core
+@parameters
+g_cond: Condition to test.
+g_body: Expressions to evaluate if true.
+@example
+when(x > 10
+  print("High value")
+  x = 0
+)
+@desc Executes a block of code only if the condition is true. Returns the value of the last expression.
+
+@function unless
+@usage unless(g_cond g_body ...)
+@category Core
+@parameters
+g_cond: Condition to test.
+g_body: Expressions to evaluate if false.
+@example
+unless(dbIsId(cv)
+  error("Invalid CV ID")
+)
+@desc Executes a block of code only if the condition is false.
+
+@function cond
+@usage cond( (g_c1 g_b1) (g_c2 g_b2) ... [ (t g_default) ] )
+@category Core
+@parameters
+g_c: Condition.
+g_b: Body for that condition.
+@example
+cond(
+  (x < 0  "Negative")
+  (x == 0 "Zero")
+  (t      "Positive")
+)
+@desc Multi-way conditional branch. Evaluates conditions until one is true, then executes its body.
+
+@function case
+@usage case(g_key (g_match1 g_body1) ... [ (t g_default) ] )
+@category Core
+@parameters
+g_key: Value to match.
+g_match: Pattern or value to compare against g_key.
+@example
+case(cv~>viewName
+  ("layout"    runLayoutSync())
+  ("schematic" runSchSync())
+  (t           warn("Unknown view"))
+)
+@desc Matches a key against multiple patterns and executes the corresponding body.
+
+@function plus
+@usage plus(n_1 [n_2 ...])
+@category Math
+@parameters
+n: Numbers to add.
+@example
+plus(1 2 3) ; Returns 6
+@desc Returns the sum of its arguments. Same as the '+' operator.
+
+@function difference
+@usage difference(n_1 [n_2 ...])
+@category Math
+@parameters
+n: Numbers to subtract from the first.
+@example
+difference(10 2 3) ; Returns 5
+@desc Subtracts subsequent arguments from the first. Same as the '-' operator.
+
+@function times
+@usage times(n_1 [n_2 ...])
+@category Math
+@parameters
+n: Numbers to multiply.
+@example
+times(2 3 4) ; Returns 24
+@desc Returns the product of its arguments. Same as the '*' operator.
+
+@function quotient
+@usage quotient(n_num n_denom)
+@category Math
+@parameters
+n_num: Numerator.
+n_denom: Denominator.
+@example
+quotient(10 3) ; Returns 3 (integer) or 3.33 (float)
+@desc Performs division. If both are integers, it performs integer division. Same as the '/' operator.
+
+@function abs
+@usage abs(n_num)
+@category Math
+@parameters
+n_num: Any number.
+@example
+abs(-5.5) ; Returns 5.5
+@desc Returns the absolute value of a number.
+
+@function round
+@usage round(n_num)
+@category Math
+@parameters
+n_num: Floating point number.
+@example
+round(1.6) ; Returns 2
+@desc Rounds a number to the nearest integer.
+
+@function floor
+@usage floor(n_num)
+@category Math
+@parameters
+n_num: Floating point number.
+@example
+floor(1.9) ; Returns 1
+@desc Returns the largest integer less than or equal to the argument.
+
+@function ceiling
+@usage ceiling(n_num)
+@category Math
+@parameters
+n_num: Floating point number.
+@example
+ceiling(1.1) ; Returns 2
+@desc Returns the smallest integer greater than or equal to the argument.
+
+@function sin
+@usage sin(n_radians)
+@category Math
+@parameters
+n_radians: Angle in radians.
+@desc Returns the sine of an angle.
+
+@function cos
+@usage cos(n_radians)
+@category Math
+@parameters
+n_radians: Angle in radians.
+@desc Returns the cosine of an angle.
+
+@function tan
+@usage tan(n_radians)
+@category Math
+@parameters
+n_radians: Angle in radians.
+@desc Returns the tangent of an angle.
+
+@function atan2
+@usage atan2(n_y n_x)
+@category Math
+@parameters
+n_y: Y coordinate.
+n_x: X coordinate.
+@desc Returns the arc tangent of y/x in radians, accounting for quadrants.
+
+@function sqrt
+@usage sqrt(n_num)
+@category Math
+@parameters
+n_num: Positive number.
+@desc Returns the square root of a number.
+
+@function log
+@usage log(n_num)
+@category Math
+@parameters
+n_num: Positive number.
+@desc Returns the natural logarithm of a number.
+
+@function exp
+@usage exp(n_num)
+@category Math
+@parameters
+n_num: Exponent.
+@desc Returns e raised to the power of the argument.
+
+@function rexCompile
+@usage rexCompile(t_pattern)
+@category RegEx
+@parameters
+t_pattern: Regular expression string.
+@example
+rexCompile("inv_[0-9]+")
+@desc Compiles a regular expression for subsequent matching or replacement.
+
+@function rexExecute
+@usage rexExecute(t_string)
+@category RegEx
+@parameters
+t_string: String to search.
+@example
+if(rexExecute(name) printf("Matches!"))
+@desc Matches the compiled regular expression against the target string. Returns t on success.
+
+@function rexReplace
+@usage rexReplace(t_source t_replacement x_index)
+@category RegEx
+@parameters
+t_source: Original string.
+t_replacement: New text (can use \1, \2 for groups).
+x_index: Match index (0 for first).
+@example
+newName = rexReplace(oldName "cell_\\1" 0)
+@desc Replaces matched portions of a string using the compiled regex.
+
+@function rexMatchp
+@usage rexMatchp(t_pattern t_string)
+@category RegEx
+@parameters
+t_pattern: Regex pattern.
+t_string: Target string.
+@example
+if(rexMatchp("^A" str) ...)
+@desc Shortcut to compile and execute a match in one step.
+
+@function parseString
+@usage parseString(t_string [t_delimiters])
+@category String
+@parameters
+t_string: String to split.
+t_delimiters: Optional delimiter characters (default is whitespace).
+@example
+parts = parseString("M1 drawing" " ") ; Returns ("M1" "drawing")
+@desc Splits a string into a list of tokens based on delimiters.
+
+@function buildString
+@usage buildString(l_strings [t_glue])
+@category String
+@parameters
+l_strings: List of strings to join.
+t_glue: Character(s) to insert between strings.
+@example
+path = buildString(list("usr" "local" "bin") "/") ; Returns "usr/local/bin"
+@desc Joins a list of strings into one string using a glue string.
+
+@function upperCase
+@usage upperCase(t_string)
+@category String
+@desc Returns the string converted to all uppercase characters.
+
+@function lowerCase
+@usage lowerCase(t_string)
+@category String
+@desc Returns the string converted to all lowercase characters.
+
+@function strlen
+@usage strlen(t_string)
+@category String
+@desc Returns the number of characters in a string.
+
+@function substring
+@usage substring(t_string x_start [x_length])
+@category String
+@parameters
+t_string: Source string.
+x_start: 1-based start index.
+x_length: Number of characters.
+@example
+substring("Cadence" 1 3) ; Returns "Cad"
+@desc Extracts a portion of a string.
+
+@function getchar
+@usage getchar(t_string x_index)
+@category String
+@parameters
+x_index: 1-based index.
+@desc Returns the single character symbol at the specified index.
+
+@function charToInt
+@usage charToInt(s_char)
+@category String
+@desc Returns the ASCII integer value of a single character symbol.
+
+@function intToChar
+@usage intToChar(x_ascii)
+@category String
+@desc Returns the single character symbol for a given ASCII integer.
+
+@function dbGetHierPath
+@usage dbGetHierPath(d_inst)
+@category Database
+@parameters
+d_inst: Instance ID.
+@desc Returns the full hierarchical path string for the specified instance.
+
+@function dbOpenLib
+@usage dbOpenLib(t_libName)
+@category Database
+@desc Opens a library for editing and returns its database ID.
+
+@function dbGetLibCells
+@usage dbGetLibCells(d_lib)
+@category Database
+@desc Returns a list of cell IDs belonging to the specified library.
+
+@function dbGetCellViews
+@usage dbGetCellViews(d_cell)
+@category Database
+@desc Returns a list of cellview IDs for the specified cell.
+
+@function ddGetLibList
+@usage ddGetLibList()
+@category Database
+@desc Returns a list of all libraries defined in the current cds.lib.
+
+@function envGetVal
+@usage envGetVal(t_tool t_var)
+@category Core
+@parameters
+t_tool: Tool name (e.g., "layout", "schematic").
+t_var: Variable name.
+@example
+grid = envGetVal("layout" "xSnapSpacing")
+@desc Retrieves the value of a Cadence environment variable.
+
+@function envSetVal
+@usage envSetVal(t_tool t_var t_type g_val)
+@category Core
+@parameters
+t_tool: Tool name.
+t_var: Variable name.
+t_type: Data type symbol (e.g., 'string, 'float, 'boolean).
+g_val: New value.
+@example
+envSetVal("layout" "xSnapSpacing" 'float 0.005)
+@desc Sets the value of a Cadence environment variable for the current session.
+
+@function techGetTechFile
+@usage techGetTechFile(d_cv)
+@category Core
+@desc Returns the tech file ID associated with the cellview.
+
+@function techGetLayerNum
+@usage techGetLayerNum(d_tech t_layerName)
+@category Core
+@desc Returns the internal layer number for a given layer name string.
+
+@function techGetLayerName
+@usage techGetLayerName(d_tech x_layerNum)
+@category Core
+@desc Returns the name string for a given internal layer number.
+
+@function schCheck
+@usage schCheck(d_cv)
+@category Schematic
+@desc Performs "Check and Save" logic on a schematic cellview, updating connectivity.
+
+@function schCreatePin
+@usage schCreatePin(d_cv d_master t_name t_type l_origin t_orient)
+@category Schematic
+@parameters
+d_master: Pin master ID (usually from 'basic' library).
+t_type: "input", "output", "inputOutput".
+@desc Creates a pin in a schematic cellview.
+
+@function schCreateWire
+@usage schCreateWire(d_cv t_type l_pts)
+@category Schematic
+@parameters
+t_type: "draw", "route".
+l_pts: List of points.
+@desc Creates a wire in a schematic cellview.
+
+@function hiCreateIntField
+@usage hiCreateIntField(?name s_name ?prompt t_prompt ?value x_init)
+@category UI
+@desc Creates an integer input field for a form.
+
+@function hiCreateFloatField
+@usage hiCreateFloatField(?name s_name ?prompt t_prompt ?value n_init)
+@category UI
+@desc Creates a floating-point input field for a form.
+
+@function hiCreateBooleanButton
+@usage hiCreateBooleanButton(?name s_name ?buttonText t_text ?value b_init)
+@category UI
+@desc Creates a boolean (on/off) button field.
+
+@function hiCreateCyclicField
+@usage hiCreateCyclicField(?name s_name ?choices l_choices ?prompt t_prompt ?value t_init)
+@category UI
+@desc Creates a cyclic (dropdown) selection field.
+
+@function hiCreateRadioField
+@usage hiCreateRadioField(?name s_name ?choices l_choices ?prompt t_prompt ?value t_init)
+@category UI
+@desc Creates a radio button selection field.
+
+@function hiGetFormValue
+@usage hiGetFormValue(s_formHandle t_field)
+@category UI
+@desc Programmatically retrieves the value of a field in a displayed or memory form.
+
+@function hiSetFormValue
+@usage hiSetFormValue(s_formHandle t_field g_val)
+@category UI
+@desc Programmatically sets the value of a field in a form.
+
+@function geSelectFig
+@usage geSelectFig(d_fig [w_window])
+@category Window
+@desc Adds the specified figure to the selection set.
+
+@function geDeselectFig
+@usage geDeselectFig(d_fig [w_window])
+@category Window
+@desc Removes the specified figure from the selection set.
+
+@function geDeselectAll
+@usage geDeselectAll([w_window])
+@category Window
+@desc Clears the selection set in the specified window.
+
+@function hiGetCurrentWindow
+@usage hiGetCurrentWindow()
+@category Window
+@desc Returns the ID of the window that currently has focus.
+
+@function hiGetWindowList
+@usage hiGetWindowList()
+@category Window
+@desc Returns a list of all currently open window IDs.
+
+@function ddUpdateLibList
+@usage ddUpdateLibList()
+@category Database
+@desc Forces a refresh of the internal library list from cds.lib.
+
+@function isFile
+@usage isFile(t_path)
+@category Core
+@desc Returns t if the path points to an existing file and the user has read permission.
+
+@function isDir
+@usage isDir(t_path)
+@category Core
+@desc Returns t if the path points to an existing directory.
+
+@function deleteFile
+@usage deleteFile(t_path)
+@desc Deletes the specified file from disk.
+
+@function simplifyFilename
+@usage simplifyFilename(t_path)
+@desc Resolves ".." and "." in a path and returns the clean absolute path.
+
+@function getWorkingDir
+@usage getWorkingDir()
+@desc Returns the current working directory of the Virtuoso process.
+
+@function setWorkingDir
+@usage setWorkingDir(t_path)
+@desc Changes the current working directory.
+
+@function sh
+@usage sh(t_command)
+@desc Executes a shell command and returns t if successful. Output is printed to CIW.
+
+@function shell
+@usage shell(t_command)
+@desc Executes a shell command and returns the exit status code.
+
+@function exit
+@usage exit()
+@desc Exits the Virtuoso/SKILL environment.
+
+@function help
+@usage help([t_topic])
+@desc Opens the Cadence help documentation system.
+
+@function time
+@usage time()
+@desc Returns the current system time in seconds since the epoch.
+
+@function date
+@usage date()
+@desc Returns a string representation of the current date and time.
+
+@function sleep
+@usage sleep(x_seconds)
+@desc Pauses execution for the specified number of seconds.
+
+@function member
+@usage member(g_item l_list)
+@parameters
+g_item: Any SKILL object.
+l_list: A list to search.
+@example
+member(2 list(1 2 3)) ; Returns (2 3)
+@desc Returns the sublist of l_list that begins with the first occurrence of g_item. Returns nil if not found.
+
+@function assoc
+@usage assoc(g_key l_alist)
+@parameters
+g_key: The key to find.
+l_alist: An association list (a list of lists).
+@example
+alist = list(list('a 1) list('b 2))
+assoc('a alist) ; Returns (a 1)
+@desc Returns the first sublist in l_alist whose first element (car) is equal to g_key.
+
+@function nth
+@usage nth(x_index l_list)
+@parameters
+x_index: The zero-based index.
+l_list: The list to access.
+@example
+nth(0 list("a" "b")) ; Returns "a"
+@desc Returns the element at the specified zero-based index.
+
+@function nthelem
+@usage nthelem(x_index l_list)
+@parameters
+x_index: The one-based index.
+l_list: The list to access.
+@example
+nthelem(1 list("a" "b")) ; Returns "a"
+@desc Returns the element at the specified one-based index.
+
+@function last
+@usage last(l_list)
+@desc Returns the last cons cell of the list.
+
+@function listp
+@usage listp(g_obj)
+@desc Returns t if the object is a list (including nil).
+
+@function dtpr
+@usage dtpr(g_obj)
+@desc Returns t if the object is a non-empty list (a dot-pair).
+
+@function atom
+@usage atom(g_obj)
+@desc Returns t if the object is NOT a dot-pair (cons cell). Symbols, numbers, and nil are atoms.
+
+@function boundp
+@usage boundp(s_var)
+@desc Returns t if the symbol has a global value assigned to it.
+
+@function symeval
+@usage symeval(s_var)
+@desc Returns the value of the symbol. Evaluates the variable name.
+
+@function funcall
+@usage funcall(u_func [g_arg ...])
+@desc Calls the function with the provided arguments.
+
+@function apply
+@usage apply(u_func l_args)
+@desc Calls the function using the elements of the list as arguments.
+
+@function mapcar
+@usage mapcar(u_func l_list1 [l_list2 ...])
+@desc Applies a function to each element of the lists and returns a list of results.
+
+@function mapc
+@usage mapc(u_func l_list1 [l_list2 ...])
+@desc Applies a function to each element of the lists. Returns the first list. Used for side effects.
+
+@function sort
+@usage sort(l_list u_compare)
+@desc Sorts a list in place using the comparison function.
+
+@function setq
+@usage setq(s_var g_val)
+@desc Basic assignment macro. First argument is not evaluated.
+
+@function set
+@usage set(s_var g_val)
+@desc Assignment function. First argument IS evaluated to get the symbol name.
+
+@function setfn
+@usage setfn(s_name u_func)
+@desc Assigns a function object to a symbol's function cell.
+
+@function getfn
+@usage getfn(s_name)
+@desc Returns the function object associated with a symbol.
+
+@function getd
+@usage getd(s_name)
+@desc Returns the function definition of a symbol if it exists.
+
+@function putprop
+@usage putprop(s_obj g_val s_prop)
+@desc Adds a property to a symbol's property list.
+
+@function get
+@usage get(s_obj s_prop)
+@desc Retrieves a property value from a symbol.
+
+@function remprop
+@usage remprop(s_obj s_prop)
+@desc Removes a property from a symbol.
+
+@function plist
+@usage plist(s_obj)
+@desc Returns the entire property list of a symbol.
+
+@function typep
+@usage typep(g_obj s_type)
+@desc Returns t if the object is of the specified type.
+
+@function complexp
+@usage complexp(g_obj)
+@desc Returns t if the object is a complex number.
+
+@function stringToSymbol
+@usage stringToSymbol(t_str)
+@desc Converts a string to a symbol.
+
+@function symbolToString
+@usage symbolToString(s_sym)
+@desc Converts a symbol to a string.
+
+@function atoi
+@usage atoi(t_str)
+@desc Converts a string to an integer.
+
+@function atof
+@usage atof(t_str)
+@desc Converts a string to a float.
+
+@function itoa
+@usage itoa(x_num)
+@desc Converts an integer to a string.
+
+@function printf
+@usage printf(t_format [g_arg ...])
+@desc Formatted print to CIW.
+
+@function fprintf
+@usage fprintf(p_port t_format [g_arg ...])
+@desc Formatted print to a port.
+
+@function sprintf
+@usage sprintf(s_var t_format [g_arg ...])
+@desc Formatted print to a string.
+
+@function open
+@usage open(t_path t_mode)
+@desc Opens a file for I/O. Modes: "r", "w", "a".
+
+@function close
+@usage close(p_port)
+@desc Closes an I/O port.
+
+@function gets
+@usage gets(p_port)
+@desc Reads a line from a port as a string.
+
+@function lineread
+@usage lineread(p_port)
+@desc Reads a SKILL expression from a port.
+
+@function load
+@usage load(t_path)
+@desc Loads and executes a SKILL file.
+
+@function loadi
+@usage loadi(t_path)
+@desc Loads a file but ignores errors within it.
+
+@function prog
+@usage prog(l_vars g_body ...)
+@desc Defines a scope with local variables and support for 'return' and 'go' (labels).
+
+@function return
+@usage return([g_val])
+@desc Returns a value from the nearest 'prog' block.
+
+@function go
+@usage go(s_label)
+@desc Jumps to a label within a 'prog' block.
+
+@function quote
+@usage quote(g_expr)
+@desc Returns the unevaluated expression. Same as the ' prefix.
+
+@function list
+@usage list([g_arg ...])
+@desc Creates a new list.
+
+@function nconc
+@usage nconc(l_1 l_2)
+@desc Destructively appends two lists.
+
+@function nreverse
+@usage nreverse(l_list)
+@desc Destructively reverses a list.
+
+@function subst
+@usage subst(g_new g_old l_list)
+@desc Substitutes all occurrences of g_old with g_new in a list (recursively).
+
+@function copy
+@usage copy(g_obj)
+@desc Creates a top-level copy of a list or other object.
+
+@function equal
+@usage equal(g_1 g_2)
+@desc Recursive equality check for lists and strings.
+
+@function eq
+@usage eq(g_1 g_2)
+@desc Identity check (pointer equality). Fast.
+
+@function eqv
+@usage eqv(g_1 g_2)
+@desc Value equality for numbers and characters.
+
+@function defun
+@usage defun(s_name (l_args) g_body ...)
+@desc Legacy function definition. Use 'procedure' for new code.
+
+@function macro
+@usage macro(s_name (l_args) g_body ...)
+@desc Defines a SKILL macro.
+
+@function errset
+@usage errset(g_expr [b_printError])
+@desc Executes an expression and catches any errors. Returns (result) on success or nil on error.
+
+@function setf
+@usage setf(g_place g_val)
+@desc Generalized assignment (can assign to array elements, table entries, etc.).
+
+@function makeTable
+@usage makeTable(s_name [g_default])
+@desc Creates an association table (hash map).
+
+@function tablep
+@usage tablep(g_obj)
+@desc Returns t if the object is a table.
+
+@function remove
+@usage remove(g_item l_list)
+@desc Returns a copy of the list with all occurrences of g_item removed.
+
+@function remq
+@usage remq(g_item l_list)
+@desc Returns a copy of the list with all items eq to g_item removed.
+
+@function delete
+@usage delete(g_item l_list)
+@desc Destructively removes all occurrences of g_item from the list.
+
+@function delq
+@usage delq(g_item l_list)
+@desc Destructively removes all items eq to g_item from the list.
+
+@function push
+@usage push(g_item s_listVar)
+@desc Macro to push an item onto a list variable.
+
+@function pop
+@usage pop(s_listVar)
+@desc Macro to pop an item from a list variable.
+
+@function initelem
+@usage initelem(l_list)
+@desc Returns all but the last element of a list.
+
+@function last
+@usage last(l_list)
+@desc Returns the last cons cell of a list.
+
+@function adjoin
+@usage adjoin(g_item l_list)
+@desc Adds g_item to the list only if it is not already a member.
+
+@function union
+@usage union(l_1 l_2)
+@desc Returns the set union of two lists.
+
+@function intersection
+@usage intersection(l_1 l_2)
+@desc Returns the set intersection of two lists.
+
+@function setDifference
+@usage setDifference(l_1 l_2)
+@desc Returns the set difference (l1 - l2).
+
+@function subsetp
+@usage subsetp(l_1 l_2)
+@desc Returns t if l1 is a subset of l2.
+
+@function caar
+@usage caar(l_list)
+@desc car of car.
+
+@function cadr
+@usage cadr(l_list)
+@desc car of cdr (second element).
+
+@function cdar
+@usage cdar(l_list)
+@desc cdr of car.
+
+@function cddr
+@usage cddr(l_list)
+@desc cdr of cdr (remainder after two elements).
+
+@function caaar
+@usage caaar(l_list)
+@desc car of car of car.
+
+@function cadar
+@usage cadar(l_list)
+@desc car of cdr of car.
+
+@function caddr
+@usage caddr(l_list)
+@desc car of cdr of cdr (third element).
+
+@function cadddr
+@usage cadddr(l_list)
+@desc Fourth element of a list.
+
+@function dbrOpen
+@usage dbrOpen(t_lib t_cell t_view)
+@desc Opens a cellview for DBR (Design Browser) access.
+
+@function dbrClose
+@usage dbrClose(d_cv)
+@desc Closes a DBR cellview.
+
+@function dbGetPropByName
+@usage dbGetPropByName(d_obj t_name)
+@desc Finds a specific property object on a database object.
+
+@function dbReplaceProp
+@usage dbReplaceProp(d_obj t_name t_type g_val)
+@desc Creates or updates a property on a database object.
+
+@function dbDeletePropByName
+@usage dbDeletePropByName(d_obj t_name)
+@desc Deletes a property from a database object.
+
+@function dbOpenCellViewByType
+@usage dbOpenCellViewByType(t_lib t_cell t_view [t_type] [t_mode])
+@desc Detailed entry for dbOpenCellViewByType.
+
+@function dbCreateLabel
+@usage dbCreateLabel(d_cv l_layer l_origin t_text t_just t_orient t_font n_height)
+@desc Detailed entry for dbCreateLabel.
+
+@function dbCreateRect
+@usage dbCreateRect(d_cv l_layer l_bBox)
+@desc Detailed entry for dbCreateRect.
+
+@function dbCreateInst
+@usage dbCreateInst(d_cv d_master t_name l_origin t_orient [x_num])
+@desc Detailed entry for dbCreateInst.
+
+@function dbCreatePath
+@usage dbCreatePath(d_cv l_layer l_pts n_width)
+@desc Detailed entry for dbCreatePath.
+
+@function dbCreatePolygon
+@usage dbCreatePolygon(d_cv l_layer l_pts)
+@desc Detailed entry for dbCreatePolygon.
+
+@function dbCreateLine
+@usage dbCreateLine(d_cv l_layer l_pts)
+@desc Detailed entry for dbCreateLine.
+
+@function dbCreateEllipse
+@usage dbCreateEllipse(d_cv l_layer l_bBox)
+@desc Detailed entry for dbCreateEllipse.
+
+@function dbFlattenInst
+@usage dbFlattenInst(d_inst x_depth)
+@desc Flattens an instance to the specified depth.
+
+@function dbSetLayerVisible
+@usage dbSetLayerVisible(d_tech t_layer b_visible)
+@desc Sets visibility of a layer in the tech file context.
+
+@function dbIsLayerVisible
+@usage dbIsLayerVisible(d_tech t_layer)
+@desc Checks if a layer is visible.
+
+@function dbSetLayerSelectable
+@usage dbSetLayerSelectable(d_tech t_layer b_select)
+@desc Sets selectability of a layer.
+
+@function dbIsLayerSelectable
+@usage dbIsLayerSelectable(d_tech t_layer)
+@desc Checks if a layer is selectable.
+
+@function dbGetInstTermByName
+@usage dbGetInstTermByName(d_inst t_name)
+@desc Finds an instance terminal by name.
+
+@function dbGetInstPinByName
+@usage dbGetInstPinByName(d_inst t_name)
+@desc Finds an instance pin by name.
+
+@function dbGetTermName
+@usage dbGetTermName(d_term)
+@desc Returns the name of a terminal.
+
+@function dbGetNetName
+@usage dbGetNetName(d_net)
+@desc Returns the name of a net.
+
+@function dbGetCellViewCellName
+@usage dbGetCellViewCellName(d_cv)
+@desc Returns the cell name for a cellview.
+
+@function dbGetCellViewLibName
+@usage dbGetCellViewLibName(d_cv)
+@desc Returns the library name for a cellview.
+
+@function dbGetCellViewViewName
+@usage dbGetCellViewViewName(d_cv)
+@desc Returns the view name for a cellview.
+
+@function dbReopen
+@usage dbReopen(d_cv t_mode)
+@desc Changes the access mode of an open cellview (e.g., "r" to "a").
+
+@function dbRefresh
+@usage dbRefresh(d_cv)
+@desc Refreshes a cellview from disk if it has changed.
+
+@function dbIsId
+@usage dbIsId(g_obj)
+@desc Checks if an object is a valid database ID.
+
+@function dbComputeBBox
+@usage dbComputeBBox(d_cv)
+@desc Forces a recomputation of the cellview bounding box.
+
+@function dbMoveFig
+@usage dbMoveFig(d_fig d_cv l_transform)
+@desc Moves or copies a figure using a transformation matrix.
+
+@function dbCopyFig
+@usage dbCopyFig(d_fig d_cv l_transform)
+@desc Copies a figure.
+
+@function dbDeleteObject
+@usage dbDeleteObject(d_obj)
+@desc Deletes a database object (shape, instance, net, etc.).
+
+@function dbGetAnyInstMaster
+@usage dbGetAnyInstMaster(d_inst)
+@desc Returns the master cellview ID for any type of instance.
+
+@function dbGetHierPath
+@usage dbGetHierPath(d_inst)
+@desc Returns the full hierarchical path to an instance.
+
+@function dbOpenCellViewByType
+@usage dbOpenCellViewByType(t_lib t_cell t_view [t_type] [t_mode])
+@desc Comprehensive database access.
+
+@function leHiCreateRect
+@usage leHiCreateRect()
+@desc Interactive command to create a rectangle.
+
+@function leHiCreatePath
+@usage leHiCreatePath()
+@desc Interactive command to create a path.
+
+@function leHiCreateInst
+@usage leHiCreateInst()
+@desc Interactive command to place an instance.
+
+@function leHiFlatten
+@usage leHiFlatten()
+@desc Interactive command to flatten instances.
+
+@function leHiMerge
+@usage leHiMerge()
+@desc Interactive command to merge shapes.
+
+@function leHiChop
+@usage leHiChop()
+@desc Interactive command to chop shapes.
+
+@function leHiStretch
+@usage leHiStretch()
+@desc Interactive command to stretch shapes.
+
+@function leHiCopy
+@usage leHiCopy()
+@desc Interactive command to copy objects.
+
+@function leHiMove
+@usage leHiMove()
+@desc Interactive command to move objects.
+
+@function leHiDelete
+@usage leHiDelete()
+@desc Interactive command to delete objects.
+
+@function leHiUndo
+@usage leHiUndo()
+@desc Interactive command to undo the last layout action.
+
+@function leHiRedo
+@usage leHiRedo()
+@desc Interactive command to redo the last undone layout action.
+
+@function schHiCreateInst
+@usage schHiCreateInst()
+@desc Interactive schematic instance placement.
+
+@function schHiCreateWire
+@usage schHiCreateWire()
+@desc Interactive schematic wiring.
+
+@function schHiCheckAndSave
+@usage schHiCheckAndSave()
+@desc Interactive schematic check and save.
+
+@function schHiCreatePin
+@usage schHiCreatePin()
+@desc Interactive schematic pin creation.
+
+@function schHiDelete
+@usage schHiDelete()
+@desc Interactive schematic deletion.
+
+@function schHiCopy
+@usage schHiCopy()
+@desc Interactive schematic copy.
+
+@function schHiMove
+@usage schHiMove()
+@desc Interactive schematic move.
+
+@function schHiRotate
+@usage schHiRotate()
+@desc Interactive schematic rotation.
+
+@function hiCreateStringField
+@usage hiCreateStringField(?name s_name ?prompt t_prompt ?value t_val [?callback t_cb])
+@desc String input field.
+
+@function hiCreateIntField
+@usage hiCreateIntField(?name s_name ?prompt t_prompt ?value x_val)
+@desc Integer input field.
+
+@function hiCreateFloatField
+@usage hiCreateFloatField(?name s_name ?prompt t_prompt ?value n_val)
+@desc Floating point input field.
+
+@function hiCreateButton
+@usage hiCreateButton(?name s_name ?buttonText t_text ?callback t_cb)
+@desc Form button.
+
+@function hiCreateAppForm
+@usage hiCreateAppForm(?name s_name ?formTitle t_title ?fields l_fields ?callback t_cb)
+@desc Main form container.
+
+@function hiDisplayForm
+@usage hiDisplayForm(s_form)
+@desc Shows a form to the user.
+
+@function hiGetFormValue
+@usage hiGetFormValue(s_form t_field)
+@desc Gets value from a form field.
+
+@function hiSetFormValue
+@usage hiSetFormValue(s_form t_field g_val)
+@desc Sets value of a form field.
+
+@function hiToggleField
+@usage hiToggleField(s_form t_field b_state)
+@desc Enables or disables a form field.
+
+@function hiShowField
+@usage hiShowField(s_form t_field b_state)
+@desc Shows or hides a form field.
+
+@function hiCreateCyclicField
+@usage hiCreateCyclicField(?name s_name ?choices l_choices ?prompt t_prompt ?value t_val)
+@desc Dropdown selection.
+
+@function hiCreateRadioField
+@usage hiCreateRadioField(?name s_name ?choices l_choices ?prompt t_prompt ?value t_val)
+@desc Radio button selection.
+
+@function hiCreateComboField
+@usage hiCreateComboField(?name s_name ?choices l_choices ?prompt t_prompt ?value t_val)
+@desc Combined string and cyclic field.
+
+@function hiCreateToggleField
+@usage hiCreateToggleField(?name s_name ?prompt t_prompt ?value b_val)
+@desc Checkbox field.
+
+@function hiCreateSeparatorField
+@usage hiCreateSeparatorField(?name s_name)
+@desc Horizontal line separator in a form.
+
+@function hiCreateLabelField
+@usage hiCreateLabelField(?name s_name ?labelText t_text)
+@desc Static text label in a form.
+
+@function geGetWindowCellView
+@usage geGetWindowCellView([w_window])
+@desc Returns the cellview visible in a window.
+
+@function geGetEditCellView
+@usage geGetEditCellView([w_window])
+@desc Returns the cellview open for editing in a window.
+
+@function geGetSelectedSet
+@usage geGetSelectedSet([w_window])
+@desc Returns list of selected objects.
+
+@function geSelectFig
+@usage geSelectFig(d_fig)
+@desc Selects a figure.
+
+@function geDeselectFig
+@usage geDeselectFig(d_fig)
+@desc Deselects a figure.
+
+@function geDeselectAll
+@usage geDeselectAll()
+@desc Deselects everything.
+
+@function geAddInst
+@usage geAddInst(d_cv d_master t_name l_pt t_orient)
+@desc High level instance placement.
+
+@function geDeleteAllLabels
+@usage geDeleteAllLabels(d_cv)
+@desc Utility to clear labels from a cellview.
+
+@function geQuerySelSet
+@usage geQuerySelSet()
+@desc Opens the query property dialog for selected objects.
+
+@function techGetTechFile
+@usage techGetTechFile(d_cv)
+@desc Get tech file from cellview.
+
+@function techGetSpacingRule
+@usage techGetSpacingRule(d_tech t_rule t_layer1 [t_layer2])
+@desc Get DRC spacing rules.
+
+@function techGetOrderedLayerList
+@usage techGetOrderedLayerList(d_tech)
+@desc Returns layers in LSW order.
+
+@function rodCreateRect
+@usage rodCreateRect(?name t_name ?cvId d_cv ?layer l_layer ?bBox l_bBox)
+@desc ROD rectangle.
+
+@function rodCreatePath
+@usage rodCreatePath(?name t_name ?cvId d_cv ?layer l_layer ?pts l_pts ?width n_w)
+@desc ROD path.
+
+@function rodAlign
+@usage rodAlign(?alignObj d_obj ?alignPoint t_ap ?refObj d_ref ?refPoint t_rp ?xOffset n_x ?yOffset n_y)
+@desc ROD alignment.
+
+@function rodGetObj
+@usage rodGetObj(t_name [d_cv])
+@desc Finds a ROD object by its assigned name.
+
+@function rodNameShape
+@usage rodNameShape(?shape d_fig ?name t_name)
+@desc Promotes a db shape to a ROD object with a name.
+
+@function ddGetObj
+@usage ddGetObj(t_lib [t_cell] [t_view] [t_file])
+@desc Design data object access.
+
+@function ddGetLibList
+@usage ddGetLibList()
+@desc List all libraries.
+
+@function ddGetLibCells
+@usage ddGetLibCells(d_lib)
+@desc List cells in library.
+
+@function ddGetCellViews
+@usage ddGetCellViews(d_cell)
+@desc List views in cell.
+
+@function ddUpdateLibList
+@usage ddUpdateLibList()
+@desc Refresh cds.lib.
+
+@function dbOpenCellViewByType
+@usage dbOpenCellViewByType(t_lib t_cell t_view [t_type] [t_mode])
+@desc Detailed entry for dbOpenCellViewByType.
+
+@function dbSave
+@usage dbSave(d_cv)
+@desc Saves cellview.
+
+@function dbClose
+@usage dbClose(d_cv)
+@desc Closes cellview.
+
+@function dbCreateRect
+@usage dbCreateRect(d_cv l_layer l_bBox)
+@desc Creates rectangle.
+
+@function dbCreateInst
+@usage dbCreateInst(d_cv d_master t_name l_origin t_orient)
+@desc Creates instance.
+
+@function dbCreateLabel
+@usage dbCreateLabel(d_cv l_layer l_origin t_text t_just t_orient t_font n_height)
+@desc Creates label.
+
+@function dbCreatePath
+@usage dbCreatePath(d_cv l_layer l_pts n_width)
+@desc Creates path.
+
+@function dbCreateNet
+@usage dbCreateNet(d_cv t_name)
+@desc Creates net.
+
+@function dbCreateTerm
+@usage dbCreateTerm(d_net t_name t_dir)
+@desc Creates terminal.
+
+@function dbCreatePin
+@usage dbCreatePin(d_net d_fig [t_name])
+@desc Creates pin.
+
+@function car
+@usage car(l_list)
+@desc First element.
+
+@function cdr
+@usage cdr(l_list)
+@desc Tail of list.
+
+@function cadr
+@usage cadr(l_list)
+@desc Second element.
+
+@function caddr
+@usage caddr(l_list)
+@desc Third element.
+
+@function cons
+@usage cons(g_item l_list)
+@desc Add to front.
+
+@function list
+@usage list([g_arg ...])
+@desc Create list.
+
+@function append
+@usage append(l_1 l_2)
+@desc Join lists.
+
+@function length
+@usage length(l_list)
+@desc List length.
+
+@function member
+@usage member(g_item l_list)
+@desc Search list.
+
+@function assoc
+@usage assoc(g_key l_alist)
+@desc Search association list.
+
+@function let
+@usage let(l_vars g_body ...)
+@desc Local scope.
+
+@function foreach
+@usage foreach(s_var l_list g_body ...)
+@desc Iterate list.
+
+@function if
+@usage if(g_cond g_then [g_else])
+@desc If statement.
+
+@function when
+@usage when(g_cond g_body ...)
+@desc When statement.
+
+@function cond
+@usage cond( (g_c1 g_b1) ...)
+@desc Cond statement.
+
+@function case
+@usage case(g_key (g_m1 g_b1) ...)
+@desc Case statement.
+
+@function printf
+@usage printf(t_format [g_arg ...])
+@desc Print to CIW.
+
+@function warn
+@usage warn(t_format [g_arg ...])
+@desc Warning to CIW.
+
+@function error
+@usage error(t_format [g_arg ...])
+@desc Error and stop.
+
+@function type
+@usage type(g_obj)
+@desc Get object type.
+
+@function sprintf
+@usage sprintf(s_var t_format [g_arg ...])
+@desc Format string.
+
+@function strcat
+@usage strcat(t_s1 [t_s2 ...])
+@desc Concatenate strings.
+
+@function strlen
+@usage strlen(t_str)
+@desc String length.
+
+@function substring
+@usage substring(t_str x_start [x_len])
+@desc Extract string.
+
+@function parseString
+@usage parseString(t_str [t_delim])
+@desc Split string.
+
+@function buildString
+@usage buildString(l_strs [t_glue])
+@desc Join strings.
+
+@function plus
+@usage plus(n1 n2 ...)
+@desc Add.
+
+@function difference
+@usage difference(n1 n2 ...)
+@desc Subtract.
+
+@function times
+@usage times(n1 n2 ...)
+@desc Multiply.
+
+@function quotient
+@usage quotient(n1 n2)
+@desc Divide.
+
+@function abs
+@usage abs(n)
+@desc Absolute value.
+
+@function round
+@usage round(n)
+@desc Round.
+
+@function floor
+@usage floor(n)
+@desc Floor.
+
+@function ceiling
+@usage ceiling(n)
+@desc Ceiling.
+
+@function sqrt
+@usage sqrt(n)
+@desc Square root.
+
+@function rexCompile
+@usage rexCompile(t_pat)
+@desc Compile regex.
+
+@function rexExecute
+@usage rexExecute(t_str)
+@desc Execute regex.
+
+@function rexReplace
+@usage rexReplace(t_src t_rep x_idx)
+@desc Replace regex.
+
+@function procedure
+@usage procedure(s_name(l_args) g_body ...)
+@desc Define function.
+
+@function schCheck
+@usage schCheck(d_cv)
+@desc Schematic check.
+
+@function schSave
+@usage schSave(d_cv)
+@desc Schematic save.
+
+@function dbOpenLib
+@usage dbOpenLib(t_lib)
+@desc Open library.
+
+@function envGetVal
+@usage envGetVal(t_tool t_var)
+@desc Get env val.
+
+@function envSetVal
+@usage envSetVal(t_tool t_var t_type g_val)
+@desc Set env val.
+
+@function geGetWindowCellView
+@usage geGetWindowCellView()
+@desc Window cellview.
+
+@function geGetEditCellView
+@usage geGetEditCellView()
+@desc Edit cellview.
+
+@function hiDisplayForm
+@usage hiDisplayForm(s_form)
+@desc Display form.
+
+@function ddGetObj
+@usage ddGetObj(t_lib)
+@desc Get DD object.
+
+@function rodCreateRect
+@usage rodCreateRect(...)
+@desc ROD rect.
+
+@function rodAlign
+@usage rodAlign(...)
+@desc ROD align.
+
+
+@function pushf
+@usage pushf(...)
+@description Core SKILL function: pushf
+
+@function putpropqq
+@usage putpropqq(...)
+@description Core SKILL function: putpropqq
+
+@function rodGetObjHandle
+@usage rodGetObjHandle(d_rodObj t_handleName)
+@example pt = rodGetObjHandle(rodRect "lowerLeft")
+@desc Returns the coordinate of a named handle on a ROD object. Common handles: "upperLeft", "centerCenter", "lowerRight".
+
+@function ddGetObj
+@usage ddGetObj(t_libName [t_cellName] [t_viewName] [t_fileName] [d_context] [t_mode])
+@example lib = ddGetObj("myLib")
+@desc Returns a design data (DD) object. If only library is specified, it returns the library object.
+
+@function ddGetLibList
+@usage ddGetLibList()
+@example libs = ddGetLibList()
+@desc Returns a list of all libraries defined in the current cds.lib file.
+
+@function envGetVal
+@usage envGetVal(t_tool t_var)
+@example envGetVal("layout" "displayGrid")
+@desc Returns the value of a specific environment variable for a given tool.
+
+@function envSetVal
+@usage envSetVal(t_tool t_var t_type g_val)
+@example envSetVal("layout" "displayGrid" 'boolean t)
+@desc Sets an environment variable for a specific tool.
+
+@function prog
+@usage prog(l_bindings g_expr1 ...)
+@example prog((x) x=1 return(x))
+@desc Defines a local scope for variables. Unlike 'let', 'prog' supports 'return' and 'go' statements.
+
+@function procedure
+@usage procedure(s_name(l_args) g_expr1 ...)
+@example procedure(myAdd(a b) a + b)
+@desc Defines a new SKILL procedure (function).
+
+@function return
+@usage return([g_val])
+@example return(t)
+@desc Returns from a 'prog' block with an optional value.
+
+@function go
+@usage go(s_label)
+@example go(mylabel)
+@desc Jumps to a label defined within a 'prog' block.
+
+@function hiCreateLayerField
+@usage hiCreateLayerField(?name s_name ?prompt t_prompt ?value l_val)
+@example hiCreateLayerField(?name 'myLayer ?prompt "Select Layer" ?value list("M1" "drawing"))
+@desc Creates a layer selection field for a form.
+
+@function hiGetFormValue
+@usage hiGetFormValue(d_form s_field)
+@example val = hiGetFormValue(myForm 'myField)
+@desc Retrieves the current value of a field in a form.
+
+@function dbGetInstTermByName
+@usage dbGetInstTermByName(d_inst t_name)
+@example iterm = dbGetInstTermByName(inst "A")
+@desc Returns the instance terminal object on an instance with the specified name.
+
+@function dbFindNetByName
+@usage dbFindNetByName(d_cellView t_name)
+@example net = dbFindNetByName(cv "VDD")
+@desc Searches for a net in the cellview by its name.
+
+@function dbFindTermByName
+@usage dbFindTermByName(d_cellView t_name)
+@example term = dbFindTermByName(cv "OUT")
+@desc Searches for a terminal in the cellview by its name.
+
+@function dbGetAnyInstMaster
+@usage dbGetAnyInstMaster(d_inst)
+@example masterCv = dbGetAnyInstMaster(inst)
+@desc Returns the cellview object of the master of the specified instance.
+
+@function dbGetTermName
+@usage dbGetTermName(d_term)
+@example name = dbGetTermName(term)
+@desc Returns the name of the specified terminal object.
+
+@function pcreGenCompileOptBits
+@usage pcreGenCompileOptBits(...)
+@description Core SKILL function: pcreGenCompileOptBits
+
+@function pcreGenExecOptBits
+@usage pcreGenExecOptBits(...)
+@description Core SKILL function: pcreGenExecOptBits
+
+@function pcreGetRecursionLimit
+@usage pcreGetRecursionLimit(...)
+@description Core SKILL function: pcreGetRecursionLimit
+
+@function pcreListCompileOptBits
+@usage pcreListCompileOptBits(...)
+@description Core SKILL function: pcreListCompileOptBits
+
+@function pcreListExecOptBits
+@usage pcreListExecOptBits(...)
+@description Core SKILL function: pcreListExecOptBits
+
+@function pcreMatchAssocList
+@usage pcreMatchAssocList(...)
+@description Core SKILL function: pcreMatchAssocList
+
+@function pcreMatchList
+@usage pcreMatchList(...)
+@description Core SKILL function: pcreMatchList
+
+@function pcreMatchp
+@usage pcreMatchp(...)
+@description Core SKILL function: pcreMatchp
+
+@function pcreObjectp
+@usage pcreObjectp(...)
+@description Core SKILL function: pcreObjectp
+
+@function schCheck
+@usage schCheck(d_cellView)
+@example schCheck(cv)
+@desc Performs a Check-and-Save operation on a schematic cellview, verifying connectivity and inherited properties.
+
+@function schSave
+@usage schSave(d_cellView)
+@example schSave(cv)
+@desc Saves the schematic cellview to disk.
+
+@function rindex
+@usage rindex(...)
+@description Core SKILL function: rindex
+
+@function strncat
+@usage strncat(...)
+@description Core SKILL function: strncat
+
+@function strpbrk
+@usage strpbrk(...)
+@description Core SKILL function: strpbrk
+
+@function defMathConstants
+@usage defMathConstants(...)
+@description Core SKILL function: defMathConstants
+
+@function fix2
+@usage fix2(...)
+@description Core SKILL function: fix2
+
+@function int
+@usage int(...)
+@description Core SKILL function: int
+
+@function isInfinity
+@usage isInfinity(...)
+@description Core SKILL function: isInfinity
+
+@function isNaN
+@usage isNaN(...)
+@description Core SKILL function: isNaN
+
+@function leftshift
+@usage leftshift(...)
+@description Core SKILL function: leftshift
+
+@function log
+@usage log(...)
+@description Core SKILL function: log
+
+@function log10
+@usage log10(...)
+@description Core SKILL function: log10
+
+@function modf
+@usage modf(...)
+@description Core SKILL function: modf
+
+@function modulo
+@usage modulo(...)
+@description Core SKILL function: modulo
+
+@function nearlyEqual
+@usage nearlyEqual(...)
+@description Core SKILL function: nearlyEqual
+
+@function negativep
+@usage negativep(...)
+@description Core SKILL function: negativep
+
+@function rightshift
+@usage rightshift(...)
+@description Core SKILL function: rightshift
+
+@function round2
+@usage round2(...)
+@description Core SKILL function: round2
+
+@function sortcar
+@usage sortcar(...)
+@description Core SKILL function: sortcar
+
+@function sqrt
+@usage sqrt(...)
+@description Core SKILL function: sqrt
+
+@function srandom
+@usage srandom(...)
+@description Core SKILL function: srandom
+
+@function sub1
+@usage sub1(...)
+@description Core SKILL function: sub1
+
+@function truncate
+@usage truncate(...)
+@description Core SKILL function: truncate
+
+@function xdifference
+@usage xdifference(...)
+@description Core SKILL function: xdifference
+
+@function xplus
+@usage xplus(...)
+@description Core SKILL function: xplus
+
+@function xquotient
+@usage xquotient(...)
+@description Core SKILL function: xquotient
+
+@function xtimes
+@usage xtimes(...)
+@description Core SKILL function: xtimes
+
+@function zxtd
+@usage zxtd(...)
+@description Core SKILL function: zxtd
+
+@function band
+@usage band(...)
+@description Core SKILL function: band
+
+@function bitfield
+@usage bitfield(...)
+@description Core SKILL function: bitfield
+
+@function bitfield1
+@usage bitfield1(...)
+@description Core SKILL function: bitfield1
+
+@function bnand
+@usage bnand(...)
+@description Core SKILL function: bnand
+
+@function bnor
+@usage bnor(...)
+@description Core SKILL function: bnor
+
+@function bnot
+@usage bnot(...)
+@description Core SKILL function: bnot
+
+@function bor
+@usage bor(...)
+@description Core SKILL function: bor
+
+@function bxnor
+@usage bxnor(...)
+@description Core SKILL function: bxnor
+
+@function bxor
+@usage bxor(...)
+@description Core SKILL function: bxor
+
+@function setqbitfield
+@usage setqbitfield(...)
+@description Core SKILL function: setqbitfield
+
+@function setqbitfield1
+@usage setqbitfield1(...)
+@description Core SKILL function: setqbitfield1
+
+@function atan2
+@usage atan2(...)
+@description Core SKILL function: atan2
+
+@function compareTime
+@usage compareTime(...)
+@description Core SKILL function: compareTime
+
+@function eqv
+@usage eqv(...)
+@description Core SKILL function: eqv
+
+@function memv
+@usage memv(...)
+@description Core SKILL function: memv
+
+@function sxtd
+@usage sxtd(...)
+@description Core SKILL function: sxtd
+
+@function caseq
+@usage caseq(...)
+@description Core SKILL function: caseq
+
+@function catch
+@usage catch(...)
+@description Core SKILL function: catch
+
+@function decode
+@usage decode(...)
+@description Core SKILL function: decode
+
+@function do
+@usage do(...)
+@description Core SKILL function: do
+
+@function exists
+@usage exists(...)
+@description Core SKILL function: exists
+
+@function existss
+@usage existss(...)
+@description Core SKILL function: existss
+
+@function fors
+@usage fors(...)
+@description Core SKILL function: fors
+
+@function foralls
+@usage foralls(...)
+@description Core SKILL function: foralls
+
+@function foreachs
+@usage foreachs(...)
+@description Core SKILL function: foreachs
+
+@function go
+@usage go(...)
+@description Core SKILL function: go
+
+@function map
+@usage map(...)
+@description Core SKILL function: map
+
+@function mapcan
+@usage mapcan(...)
+@description Core SKILL function: mapcan
+
+@function mapcon
+@usage mapcon(...)
+@description Core SKILL function: mapcon
+
+@function mapinto
+@usage mapinto(...)
+@description Core SKILL function: mapinto
+
+@function maplist
+@usage maplist(...)
+@description Core SKILL function: maplist
+
+@function not
+@usage not(...)
+@description Core SKILL function: not
+
+@function regExitAfter
+@usage regExitAfter(...)
+@description Core SKILL function: regExitAfter
+
+@function regExitBefore
+@usage regExitBefore(...)
+@description Core SKILL function: regExitBefore
+
+@function remExitProc
+@usage remExitProc(...)
+@description Core SKILL function: remExitProc
+
+@function return
+@usage return(...)
+@description Core SKILL function: return
+
+@function setof
+@usage setof(...)
+@description Core SKILL function: setof
+
+@function setofs
+@usage setofs(...)
+@description Core SKILL function: setofs
+
+@function throw
+@usage throw(...)
+@description Core SKILL function: throw
+
+@function compress
+@usage compress(...)
+@description Core SKILL function: compress
+
+@function display
+@usage display(...)
+@description Core SKILL function: display
+
+@function ed
+@usage ed(...)
+@description Core SKILL function: ed
+
+@function edi
+@usage edi(...)
+@description Core SKILL function: edi
+
+@function edit
+@usage edit(...)
+@description Core SKILL function: edit
+
+@function edl
+@usage edl(...)
+@description Core SKILL function: edl
+
+@function encrypt
+@usage encrypt(...)
+@description Core SKILL function: encrypt
+
+@function expandMacroDeep
+@usage expandMacroDeep(...)
+@description Core SKILL function: expandMacroDeep
+
+@function fileLength
+@usage fileLength(...)
+@description Core SKILL function: fileLength
+
+@function fileSeek
+@usage fileSeek(...)
+@description Core SKILL function: fileSeek
+
+@function fileTell
+@usage fileTell(...)
+@description Core SKILL function: fileTell
+
+@function fileTimeModified
+@usage fileTimeModified(...)
+@description Core SKILL function: fileTimeModified
+
+@function scanf
+@usage scanf(...)
+@description Core SKILL function: scanf
+
+@function sscanf
+@usage sscanf(...)
+@description Core SKILL function: sscanf
+
+@function get_filename
+@usage get_filename(...)
+@description Core SKILL function: get_filename
+
+@function getc
+@usage getc(...)
+@description Core SKILL function: getc
+
+@function getOutstring
+@usage getOutstring(...)
+@description Core SKILL function: getOutstring
+
+@function include
+@usage include(...)
+@description Core SKILL function: include
+
+@function info
+@usage info(...)
+@description Core SKILL function: info
+
+@function inportp
+@usage inportp(...)
+@description Core SKILL function: inportp
+
+@function instring
+@usage instring(...)
+@description Core SKILL function: instring
+
+@function isExecutable
+@usage isExecutable(...)
+@description Core SKILL function: isExecutable
+
+@function isFileEncrypted
+@usage isFileEncrypted(...)
+@description Core SKILL function: isFileEncrypted
+
+@function isLargeFile
+@usage isLargeFile(...)
+@description Core SKILL function: isLargeFile
+
+@function isLink
+@usage isLink(...)
+@description Core SKILL function: isLink
+
+@function isPortAtEOF
+@usage isPortAtEOF(...)
+@description Core SKILL function: isPortAtEOF
+
+@function isReadable
+@usage isReadable(...)
+@description Core SKILL function: isReadable
+
+@function isWritable
+@usage isWritable(...)
+@description Core SKILL function: isWritable
+
+@function linereadstring
+@usage linereadstring(...)
+@description Core SKILL function: linereadstring
+
+@function loadi
+@usage loadi(...)
+@description Core SKILL function: loadi
+
+@function loadPort
+@usage loadPort(...)
+@description Core SKILL function: loadPort
+
+@function loadstring
+@usage loadstring(...)
+@description Core SKILL function: loadstring
+
+@function makeTempFileName
+@usage makeTempFileName(...)
+@description Core SKILL function: makeTempFileName
+
+@function newline
+@usage newline(...)
+@description Core SKILL function: newline
+
+@function numOpenFiles
+@usage numOpenFiles(...)
+@description Core SKILL function: numOpenFiles
+
+@function openportp
+@usage openportp(...)
+@description Core SKILL function: openportp
+
+@function outportp
+@usage outportp(...)
+@description Core SKILL function: outportp
+
+@function outstring
+@usage outstring(...)
+@description Core SKILL function: outstring
+
+@function portp
+@usage portp(...)
+@description Core SKILL function: portp
+
+@function pprint
+@usage pprint(...)
+@description Core SKILL function: pprint
+
+@function printlev
+@usage printlev(...)
+@description Core SKILL function: printlev
+
+@function putc
+@usage putc(...)
+@description Core SKILL function: putc
+
+@function read
+@usage read(...)
+@description Core SKILL function: read
+
+@function readTable
+@usage readTable(...)
+@description Core SKILL function: readTable
+
+@function renameFile
+@usage renameFile(...)
+@description Core SKILL function: renameFile
+
+@function simplifyFilename
+@usage simplifyFilename(...)
+@description Core SKILL function: simplifyFilename
+
+@function simplifyFilenameUnique
+@usage simplifyFilenameUnique(...)
+@description Core SKILL function: simplifyFilenameUnique
+
+@function truename
+@usage truename(...)
+@description Core SKILL function: truename
+
+@function which
+@usage which(...)
+@description Core SKILL function: which
+
+@function write
+@usage write(...)
+@description Core SKILL function: write
+
+@function writeTable
+@usage writeTable(...)
+@description Core SKILL function: writeTable
+
+@function arglist
+@usage arglist(...)
+@description Core SKILL function: arglist
+
+@function assert
+@usage assert(...)
+@description Core SKILL function: assert
+
+@function atom
+@usage atom(...)
+@description Core SKILL function: atom
+
+@function bcdp
+@usage bcdp(...)
+@description Core SKILL function: bcdp
+
+@function booleanp
+@usage booleanp(...)
+@description Core SKILL function: booleanp
+
+@function describe
+@usage describe(...)
+@description Core SKILL function: describe
+
+@function fdoc
+@usage fdoc(...)
+@description Core SKILL function: fdoc
+
+@function gc
+@usage gc(...)
+@description Core SKILL function: gc
+
+@function gensym
+@usage gensym(...)
+@description Core SKILL function: gensym
+
+@function getMuffleWarnings
+@usage getMuffleWarnings(...)
+@description Core SKILL function: getMuffleWarnings
+
+@function getSkillVersion
+@usage getSkillVersion(...)
+@description Core SKILL function: getSkillVersion
+
+@function get_pname
+@usage get_pname(...)
+@description Core SKILL function: get_pname
+
+@function get_string
+@usage get_string(...)
+@description Core SKILL function: get_string
+
+@function getVersion
+@usage getVersion(...)
+@description Core SKILL function: getVersion
+
+@function help
+@usage help(...)
+@description Core SKILL function: help
+
+@function inScheme
+@usage inScheme(...)
+@description Core SKILL function: inScheme
+
+@function inSkill
+@usage inSkill(...)
+@description Core SKILL function: inSkill
+
+@function isVarImported
+@usage isVarImported(...)
+@description Core SKILL function: isVarImported
+
+@function makeSymbol
+@usage makeSymbol(...)
+@description Core SKILL function: makeSymbol
+
+@function measureTime
+@usage measureTime(...)
+@description Core SKILL function: measureTime
+
+@function muffleWarnings
+@usage muffleWarnings(...)
+@description Core SKILL function: muffleWarnings
+
+@function needNCells
+@usage needNCells(...)
+@description Core SKILL function: needNCells
+
+@function restoreFloat
+@usage restoreFloat(...)
+@description Core SKILL function: restoreFloat
+
+@function saveFloat
+@usage saveFloat(...)
+@description Core SKILL function: saveFloat
+
+@function schemeTopLevelEnv
+@usage schemeTopLevelEnv(...)
+@description Core SKILL function: schemeTopLevelEnv
+
+@function setPrompts
+@usage setPrompts(...)
+@description Core SKILL function: setPrompts
+
+@function sstatus
+@usage sstatus(...)
+@description Core SKILL function: sstatus
+
+@function theEnvironment
+@usage theEnvironment(...)
+@description Core SKILL function: theEnvironment
+
+@function unbindVar
+@usage unbindVar(...)
+@description Core SKILL function: unbindVar
+
+@function addDefstructClass
+@usage addDefstructClass(...)
+@description Core SKILL function: addDefstructClass
+
+@function alias
+@usage alias(...)
+@description Core SKILL function: alias
+
+@function apply
+@usage apply(...)
+@description Core SKILL function: apply
+
+@function argc
+@usage argc(...)
+@description Core SKILL function: argc
+
+@function begin
+@usage begin(...)
+@description Core SKILL function: begin
+
+@function clearExitProcs
+@usage clearExitProcs(...)
+@description Core SKILL function: clearExitProcs
+
+@function declareLambda
+@usage declareLambda(...)
+@description Core SKILL function: declareLambda
+
+@function declareNLambda
+@usage declareNLambda(...)
+@description Core SKILL function: declareNLambda
+
+@function declareSQNLambda
+@usage declareSQNLambda(...)
+@description Core SKILL function: declareSQNLambda
+
+@function defdynamic
+@usage defdynamic(...)
+@description Core SKILL function: defdynamic
+
+@function defglobalfun
+@usage defglobalfun(...)
+@description Core SKILL function: defglobalfun
+
+@function define
+@usage define(...)
+@description Core SKILL function: define
+
+@function define_syntax
+@usage define_syntax(...)
+@description Core SKILL function: define_syntax
+
+@function defmacro
+@usage defmacro(...)
+@description Core SKILL function: defmacro
+
+@function defsetf
+@usage defsetf(...)
+@description Core SKILL function: defsetf
+
+@function defUserInitProc
+@usage defUserInitProc(...)
+@description Core SKILL function: defUserInitProc
+
+@function destructuringBind
+@usage destructuringBind(...)
+@description Core SKILL function: destructuringBind
+
+@function dynamic
+@usage dynamic(...)
+@description Core SKILL function: dynamic
+
+@function dynamicLet
+@usage dynamicLet(...)
+@description Core SKILL function: dynamicLet
+
+@function err
+@usage err(...)
+@description Core SKILL function: err
+
+@function errset
+@usage errset(...)
+@description Core SKILL function: errset
+
+@function errsetstring
+@usage errsetstring(...)
+@description Core SKILL function: errsetstring
+
+@function eval
+@usage eval(...)
+@description Core SKILL function: eval
+
+@function evalstring
+@usage evalstring(...)
+@description Core SKILL function: evalstring
+
+@function expandMacro
+@usage expandMacro(...)
+@description Core SKILL function: expandMacro
+
+@function fboundp
+@usage fboundp(...)
+@description Core SKILL function: fboundp
+
+@function flet
+@usage flet(...)
+@description Core SKILL function: flet
+
+@function funcall
+@usage funcall(...)
+@description Core SKILL function: funcall
+
+@function getd
+@usage getd(...)
+@description Core SKILL function: getd
+
+@function getFnWriteProtect
+@usage getFnWriteProtect(...)
+@description Core SKILL function: getFnWriteProtect
+
+@function getFunType
+@usage getFunType(...)
+@description Core SKILL function: getFunType
+
+@function getVarWriteProtect
+@usage getVarWriteProtect(...)
+@description Core SKILL function: getVarWriteProtect
+
+@function globalProc
+@usage globalProc(...)
+@description Core SKILL function: globalProc
+
+@function isCallable
+@usage isCallable(...)
+@description Core SKILL function: isCallable
+
+@function isMacro
+@usage isMacro(...)
+@description Core SKILL function: isMacro
+
+@function labels
+@usage labels(...)
+@description Core SKILL function: labels
+
+@function lambda
+@usage lambda(...)
+@description Core SKILL function: lambda
+
+@function letrec
+@usage letrec(...)
+@description Core SKILL function: letrec
+
+@function letseq
+@usage letseq(...)
+@description Core SKILL function: letseq
+
+@function mprocedure
+@usage mprocedure(...)
+@description Core SKILL function: mprocedure
+
+@function nlambda
+@usage nlambda(...)
+@description Core SKILL function: nlambda
+
+@function nprocedure
+@usage nprocedure(...)
+@description Core SKILL function: nprocedure
+
+@function procedure
+@usage procedure(...)
+@description Core SKILL function: procedure
+
+@function procedurep
+@usage procedurep(...)
+@description Core SKILL function: procedurep
+
+@function prog
+@usage prog(...)
+@description Core SKILL function: prog
+
+@function prog1
+@usage prog1(...)
+@description Core SKILL function: prog1
+
+@function prog2
+@usage prog2(...)
+@description Core SKILL function: prog2
+
+@function progn
+@usage progn(...)
+@description Core SKILL function: progn
+
+@function putd
+@usage putd(...)
+@description Core SKILL function: putd
+
+@function setf_dynamic
+@usage setf_dynamic(...)
+@description Core SKILL function: setf_dynamic
+
+@function setFnWriteProtect
+@usage setFnWriteProtect(...)
+@description Core SKILL function: setFnWriteProtect
+
+@function setVarWriteProtect
+@usage setVarWriteProtect(...)
+@description Core SKILL function: setVarWriteProtect
+
+@function unalias
+@usage unalias(...)
+@description Core SKILL function: unalias
+
+@function unwindProtect
+@usage unwindProtect(...)
+@description Core SKILL function: unwindProtect
+
+@function cdsGetInstPath
+@usage cdsGetInstPath(...)
+@description Core SKILL function: cdsGetInstPath
+
+@function cdsGetToolsPath
+@usage cdsGetToolsPath(...)
+@description Core SKILL function: cdsGetToolsPath
+
+@function cdsPlat
+@usage cdsPlat(...)
+@description Core SKILL function: cdsPlat
+
+@function changeWorkingDir
+@usage changeWorkingDir(...)
+@description Core SKILL function: changeWorkingDir
+
+@function cputime
+@usage cputime(...)
+@description Core SKILL function: cputime
+
+@function createDir
+@usage createDir(...)
+@description Core SKILL function: createDir
+
+@function createDirHier
+@usage createDirHier(...)
+@description Core SKILL function: createDirHier
+
+@function csh
+@usage csh(...)
+@description Core SKILL function: csh
+
+@function deleteDir
+@usage deleteDir(...)
+@description Core SKILL function: deleteDir
+
+@function deleteFile
+@usage deleteFile(...)
+@description Core SKILL function: deleteFile
+
+@function exit
+@usage exit(...)
+@description Core SKILL function: exit
+
+@function getCurrentTime
+@usage getCurrentTime(...)
+@description Core SKILL function: getCurrentTime
+
+@function getInstallPath
+@usage getInstallPath(...)
+@description Core SKILL function: getInstallPath
+
+@function getLogin
+@usage getLogin(...)
+@description Core SKILL function: getLogin
+
+@function getPrompts
+@usage getPrompts(...)
+@description Core SKILL function: getPrompts
+
+@function getShellEnvVar
+@usage getShellEnvVar(...)
+@description Core SKILL function: getShellEnvVar
+
+@function getSkillPath
+@usage getSkillPath(...)
+@description Core SKILL function: getSkillPath
+
+@function getTempDir
+@usage getTempDir(...)
+@description Core SKILL function: getTempDir
+
+@function getWorkingDir
+@usage getWorkingDir(...)
+@description Core SKILL function: getWorkingDir
+
+@function isDir
+@usage isDir(...)
+@description Core SKILL function: isDir
+
+@function prependInstallPath
+@usage prependInstallPath(...)
+@description Core SKILL function: prependInstallPath
+
+@function setShellEnvVar
+@usage setShellEnvVar(...)
+@description Core SKILL function: setShellEnvVar
+
+@function setSkillPath
+@usage setSkillPath(...)
+@description Core SKILL function: setSkillPath
+
+@function sh
+@usage sh(...)
+@description Core SKILL function: sh
+
+@function shell
+@usage shell(...)
+@description Core SKILL function: shell
+
+@function system
+@usage system(...)
+@description Core SKILL function: system
+
+@function unsetShellEnvVar
+@usage unsetShellEnvVar(...)
+@description Core SKILL function: unsetShellEnvVar
+
+@function vi
+@usage vi(...)
+@description Core SKILL function: vi
+
+@function vii
+@usage vii(...)
+@description Core SKILL function: vii
+
+@function vl
+@usage vl(...)
+@description Core SKILL function: vl
+
+@function makeNamespace
+@usage makeNamespace(...)
+@description Core SKILL function: makeNamespace
+
+@function findNamespace
+@usage findNamespace(...)
+@description Core SKILL function: findNamespace
+
+@function useNamespace
+@usage useNamespace(...)
+@description Core SKILL function: useNamespace
+
+@function unuseNamespace
+@usage unuseNamespace(...)
+@description Core SKILL function: unuseNamespace
+
+@function importSymbol
+@usage importSymbol(...)
+@description Core SKILL function: importSymbol
+
+@function findSymbol
+@usage findSymbol(...)
+@description Core SKILL function: findSymbol
+
+@function addToExportList
+@usage addToExportList(...)
+@description Core SKILL function: addToExportList
+
+@function getSymbolNamespace
+@usage getSymbolNamespace(...)
+@description Core SKILL function: getSymbolNamespace
+
+@function removeFromExportList
+@usage removeFromExportList(...)
+@description Core SKILL function: removeFromExportList
+
+@function addToNamespace
+@usage addToNamespace(...)
+@description Core SKILL function: addToNamespace
+
+@function shadow
+@usage shadow(...)
+@description Core SKILL function: shadow
+
+@function shadowImport
+@usage shadowImport(...)
+@description Core SKILL function: shadowImport
+
+@function removeShadowImport
+@usage removeShadowImport(...)
+@description Core SKILL function: removeShadowImport
+
+@function unimportSymbol
+@usage unimportSymbol(...)
+@description Core SKILL function: unimportSymbol
+
+@function dbOpenCellViewByType
+@usage dbOpenCellViewByType(t_libName t_cellName t_viewName [t_viewType] [t_mode])
+@example cv = dbOpenCellViewByType("myLib" "myCell" "layout" "maskLayout" "a")
+@desc Opens a cellview by its library, cell, and view names. Modes include "r" (read), "a" (append), "w" (write).
+
+@function dbSave
+@usage dbSave(d_cellView)
+@example dbSave(cv)
+@desc Saves the specified cellview to disk.
+
+@function dbClose
+@usage dbClose(d_cellView)
+@example dbClose(cv)
+@desc Closes the specified cellview and frees its memory.
+
+@function dbCreateRect
+@usage dbCreateRect(d_cellView l_layer l_bBox)
+@example dbCreateRect(cv "M1" list(0:0 10:10))
+@desc Creates a rectangular shape in the specified cellview on the given layer.
+
+@function dbCreateLabel
+@usage dbCreateLabel(d_cellView l_layer l_pt t_label t_justify t_orient t_font n_height)
+@example dbCreateLabel(cv "M1" 0:0 "VDD" "centerCenter" "R0" "roman" 0.5)
+@desc Creates a text label in the cellview.
+
+@function dbCreatePath
+@usage dbCreatePath(d_cellView l_layer l_points n_width)
+@example dbCreatePath(cv "M1" list(0:0 10:0 10:10) 0.1)
+@desc Creates a wire path with a specified width.
+
+@function dbCreatePolygon
+@usage dbCreatePolygon(d_cellView l_layer l_points)
+@example dbCreatePolygon(cv "M1" list(0:0 5:0 5:5 0:5))
+@desc Creates a polygon shape from a list of points.
+
+@function dbCreateInst
+@usage dbCreateInst(d_cellView d_masterId t_name l_pt t_orient [n_numInst])
+@example dbCreateInst(cv master "I1" 10:10 "R0")
+@desc Places an instance of a master cell into the cellview.
+
+@function dbGetq
+@usage dbGetq(d_obj s_prop)
+@example val = dbGetq(rect layerName)
+@desc Fast property accessor (equivalent to rect~>layerName).
+
+@function dbSetq
+@usage dbSetq(d_obj g_value s_prop)
+@example dbSetq(rect "M2" layerName)
+@desc Fast property setter (equivalent to rect~>layerName = "M2").
+
+@function geGetEditCellView
+@usage geGetEditCellView()
+@example cv = geGetEditCellView()
+@desc Returns the cellview currently being edited in the active window.
+
+@function geGetWindowCellView
+@usage geGetWindowCellView()
+@example cv = geGetWindowCellView()
+@desc Returns the cellview displayed in the active window (might be read-only).
+
+@function geSelectObjs
+@usage geSelectObjs(l_objs [b_deselectOther])
+@example geSelectObjs(list(rect))
+@desc Selects the specified list of database objects in the current window.
+
+@function geDeselectObjs
+@usage geDeselectObjs(l_objs)
+@example geDeselectObjs(list(rect))
+@desc Deselects the specified list of database objects.
+
+@function geGetSelSet
+@usage geGetSelSet([w_windowId])
+@example selected = geGetSelSet()
+@desc Returns a list of all currently selected objects in the window.
+
+@function hiCreateAppForm
+@usage hiCreateAppForm(?name s_name ?fields l_fields ?callback s_callback)
+@example hiCreateAppForm(?name 'myForm ?fields list(f1 f2) ?callback "myCB")
+@desc Creates an application form for user input.
+
+@function hiDisplayForm
+@usage hiDisplayForm(d_form [l_pt])
+@example hiDisplayForm(myForm)
+@desc Displays the specified form to the user.
+
+@function hiGetCurrentWindow
+@usage hiGetCurrentWindow()
+@example win = hiGetCurrentWindow()
+@desc Returns the window ID of the current active window.
+
+@function techGetTechFile
+@usage techGetTechFile(d_cellView)
+@example tf = techGetTechFile(cv)
+@desc Returns the technology file object associated with the cellview.
+
+@function schHiCreateInst
+@usage schHiCreateInst()
+@desc Interactive command to create an instance in a schematic.
+
+@function leHiCreateRect
+@usage leHiCreateRect()
+@desc Interactive command to create a rectangle in a layout.
+
+@function dbGetAnyInstByName
+@usage dbGetAnyInstByName(d_cellView t_name)
+@example inst = dbGetAnyInstByName(cv "I1")
+@desc Returns the instance object in the cellview with the specified name.
+
+@function dbGetPropByName
+@usage dbGetPropByName(d_obj t_name)
+@example prop = dbGetPropByName(inst "m")
+@desc Returns the property object of a database object by its name.
+
+@function dbSetPropByName
+@usage dbSetPropByName(d_obj t_name g_value)
+@example dbSetPropByName(inst "m" "4")
+@desc Sets or updates a property on a database object.
+
+@function dbTransformBBox
+@usage dbTransformBBox(l_bBox l_transform)
+@example newBBox = dbTransformBBox(rect~>bBox list(10:10 "R90" 1.0))
+@desc Transforms a bounding box by the specified transform (offset, orientation, magnification).
+
+@function dbGetOverlaps
+@usage dbGetOverlaps(d_cellView l_bBox [t_layer] [x_depth])
+@example shapes = dbGetOverlaps(cv list(0:0 5:5) "M1")
+@desc Returns a list of all objects that overlap the specified bounding box.
+
+@function dbMoveFig
+@usage dbMoveFig(d_fig d_targetCellView l_transform)
+@example dbMoveFig(rect cv list(5:5 "R0" 1.0))
+@desc Moves a figure to a target cellview with an optional transform.
+
+@function dbCopyFig
+@usage dbCopyFig(d_fig d_targetCellView l_transform)
+@example dbCopyFig(rect cv list(10:0 "R0" 1.0))
+@desc Copies a figure to a target cellview with an optional transform.
+
+@function geScroll
+@usage geScroll(w_windowId t_direction [n_factor])
+@example geScroll(hiGetCurrentWindow() "up" 0.5)
+@desc Scrolls the specified window in a given direction ("up", "down", "left", "right").
+
+@function geZoomIn
+@usage geZoomIn(w_windowId [l_bBox])
+@example geZoomIn(hiGetCurrentWindow() list(0:0 20:20))
+@desc Zooms into a specific area or decreases the zoom level of a window.
+
+@function geZoomOut
+@usage geZoomOut(w_windowId)
+@example geZoomOut(hiGetCurrentWindow())
+@desc Zooms out from the current view in the specified window.
+
+@function geGetWindowBox
+@usage geGetWindowBox(w_windowId)
+@example bbox = geGetWindowBox(hiGetCurrentWindow())
+@desc Returns the bounding box of the visible area in the specified window.
+
+@function hiGetForm
+@usage hiGetForm(s_formName)
+@example myForm = hiGetForm('myForm)
+@desc Returns the form object associated with the specified symbol name.
+
+@function dbCreateDot
+@usage dbCreateDot(d_cellView l_layer l_pt)
+@example dbCreateDot(cv "M1" 0:0)
+@desc Creates a single point (dot) object.
+
+@function dbCreateEllipse
+@usage dbCreateEllipse(d_cellView l_layer l_bBox)
+@example dbCreateEllipse(cv "M1" list(0:0 10:5))
+@desc Creates an elliptical shape in the specified bounding box.
+
+@function hiCreateStringField
+@usage hiCreateStringField(?name s_name ?prompt t_prompt ?value t_val)
+@example hiCreateStringField(?name 'f1 ?prompt "Name" ?value "default")
+@desc Creates a text input field for a form.
+
+@function hiCreateIntField
+@usage hiCreateIntField(?name s_name ?prompt t_prompt ?value n_val)
+@example hiCreateIntField(?name 'f2 ?prompt "Count" ?value 1)
+@desc Creates an integer input field for a form.
+
+@function hiCreateFloatField
+@usage hiCreateFloatField(?name s_name ?prompt t_prompt ?value n_val)
+@example hiCreateFloatField(?name 'f3 ?prompt "Value" ?value 1.0)
+@desc Creates a floating-point input field for a form.
+
+@function hiCreateToggleField
+@usage hiCreateToggleField(?name s_name ?prompt t_prompt ?value b_val)
+@example hiCreateToggleField(?name 'f4 ?prompt "Enable" ?value t)
+@desc Creates a boolean toggle (checkbox) field.
+
+@function hiCreateCyclicField
+@usage hiCreateCyclicField(?name s_name ?prompt t_prompt ?choices l_choices)
+@example hiCreateCyclicField(?name 'f5 ?prompt "Mode" ?choices list("A" "B" "C"))
+@desc Creates a cyclic selection field (dropdown-like).
+
+@function hiSetBindKey
+@usage hiSetBindKey(t_appName t_key t_command)
+@example hiSetBindKey("Layout" "<Key>F1" "geZoomIn()")
+@desc Defines a keyboard shortcut (bindkey) for a specific application context.
+
+@function hiGetBindKey
+@usage hiGetBindKey(t_appName t_key)
+@example cmd = hiGetBindKey("Layout" "<Key>F1")
+@desc Returns the command string currently assigned to a bindkey.
+
+@function techGetLayerNum
+@usage techGetLayerNum(d_techFile t_layerName)
+@example m1Num = techGetLayerNum(tf "M1")
+@desc Returns the internal layer number for the given layer name in the tech file.
+
+@function ddGetObj
+@usage ddGetObj(t_libName [t_cellName] [t_viewName] [t_fileName])
+@example libObj = ddGetObj("myLib")
+@desc Returns a Data Dictionary (DD) object for a library, cell, or view.
+
+@function schCreateInst
+@usage schCreateInst(d_cellView d_masterId t_name l_pt t_orient)
+@example schCreateInst(cv master "I1" 0:0 "R0")
+@desc Creates a schematic instance in the specified cellview.
+
+@function dbFlattenInst
+@usage dbFlattenInst(d_inst x_depth)
+@example dbFlattenInst(myInst 32)
+@desc Flattens an instance up to the specified hierarchy depth.
+
+@function dbCreateLine
+@usage dbCreateLine(d_cellView l_layer l_points)
+@example dbCreateLine(cv "M1" list(0:0 10:10))
+@desc Creates a zero-width line shape.
+
+@function dbCreateArc
+@usage dbCreateArc(d_cellView l_layer l_bBox n_startAngle n_stopAngle)
+@example dbCreateArc(cv "M1" list(0:0 10:10) 0 90)
+@desc Creates an arc shape in the specified bounding box.
+
+@function dbTransformPoint
+@usage dbTransformPoint(l_point l_transform)
+@example newPt = dbTransformPoint(0:0 list(10:10 "R90" 1.0))
+@desc Transforms a coordinate point by the specified transform.
+
+@function dbConcatTransform
+@usage dbConcatTransform(l_transform1 l_transform2)
+@example t3 = dbConcatTransform(t1 t2)
+@desc Concatenates two transforms into a single transform.
+
+@function hiCreatePulldownMenu
+@usage hiCreatePulldownMenu(s_name t_title l_items)
+@example hiCreatePulldownMenu('myMenu "Tools" list(i1 i2))
+@desc Creates a pull-down menu object.
+
+@function hiCreateMenuItem
+@usage hiCreateMenuItem(?name s_name ?itemText t_text ?callback t_callback)
+@example hiCreateMenuItem(?name 'item1 ?itemText "Run" ?callback "myFunc()")
+@desc Creates a menu item for use in pull-down or banner menus.
+
+@function hiInsertBannerMenu
+@usage hiInsertBannerMenu(w_windowId d_menu n_position)
+@example hiInsertBannerMenu(hiGetCurrentWindow() myMenu 1)
+@desc Inserts a pull-down menu into the window's banner (menu bar).
+
+@function hiGetWindowName
+@usage hiGetWindowName(w_windowId)
+@example name = hiGetWindowName(hiGetCurrentWindow())
+@desc Returns the title of the specified window.
+
+@function leHiMove
+@usage leHiMove()
+@desc Interactive layout command to move selected objects.
+
+@function leHiCopy
+@usage leHiCopy()
+@desc Interactive layout command to copy selected objects.
+
+@function leHiStretch
+@usage leHiStretch()
+@desc Interactive layout command to stretch shapes.
+
+@function geZoomToBBox
+@usage geZoomToBBox(w_windowId l_bBox)
+@example geZoomToBBox(hiGetCurrentWindow() list(0:0 100:100))
+@desc Zooms the specified window to the given bounding box area.
+
+@function geSetWindowBox
+@usage geSetWindowBox(w_windowId l_bBox)
+@example geSetWindowBox(hiGetCurrentWindow() list(0:0 200:200))
+@desc Directly sets the visible area (bounding box) of a window.
+
+@function techGetLayerName
+@usage techGetTechFile(d_techFile n_layerNum)
+@example m1Name = techGetLayerName(tf 10)
+@desc Returns the layer name for a given internal layer number.
+
+@function techGetSpacingRule
+@usage techGetSpacingRule(d_techFile t_rule t_layer1 [t_layer2])
+@example dist = techGetSpacingRule(tf "minSpacing" "M1" "M1")
+@desc Retrieves a spacing rule value from the tech file.
+
+@function rodCreateRect
+@usage rodCreateRect(?name t_name ?layer l_layer ?bBox l_bBox ?cv d_cv)
+@example rodCreateRect(?name "myRod" ?layer "M1" ?bBox list(0:0 5:5))
+@desc Creates a Relative Object Design (ROD) rectangle with named handles.
+
+@function rodCreatePath
+@usage rodCreatePath(?name t_name ?layer l_layer ?pts l_pts ?width n_width)
+@example rodCreatePath(?name "wire" ?layer "M2" ?pts list(0:0 10:0))
+@desc Creates a ROD path with advanced handle support.
+
+@function rodGetObj
+@usage rodGetObj(t_name [d_cv])
+@example rodObj = rodGetObj("myRod")
+@desc Returns a ROD object by its assigned name.
+
+@function dbDeleteObject
+@usage dbDeleteObject(d_obj)
+@example dbDeleteObject(rect)
+@desc Deletes a database object (shape, instance, property, etc.) from its cellview.
+
+@function dbCreateVia
+@usage dbCreateVia(d_cellView d_viaDef l_pt t_orient [l_params])
+@example dbCreateVia(cv viaDef 10:10 "R0")
+@desc Creates a via object at the specified point.
+
+
+@function dbOpenCellViewByType
+@usage dbOpenCellViewByType(libName cellName viewName [viewType] [mode])
+@category Database Access
+@parameters
+libName: String representing the name of the library.
+cellName: String representing the name of the cell.
+viewName: String representing the name of the view.
+viewType: Optional string specifying the type of view (e.g., "maskLayout", "schematic").
+mode: Optional string specifying the access mode: "r" (read), "w" (write), "a" (append).
+@example
+dbOpenCellViewByType("gpdk090" "nmos" "layout" "maskLayout" "r") ; db:0x1a2b3c4d
+@desc Opens a specified Cadence cellview and returns its database ID. If the view type or mode is omitted, it defaults to standard types and read mode.
+
+@function dbSave
+@usage dbSave(cvId)
+@category Database Access
+@parameters
+cvId: The database ID of the cellview to save.
+@example
+dbSave(cvId) ; t
+@desc Saves the specified cellview database back to disk. Returns t if successful, nil otherwise.
+
+@function dbClose
+@usage dbClose(cvId)
+@category Database Access
+@parameters
+cvId: The database ID of the cellview to close.
+@example
+dbClose(cvId) ; t
+@desc Closes the specified cellview database, releasing allocated virtual memory resources associated with the ID if no other references exist.
+
+@function dbPurge
+@usage dbPurge(cvId)
+@category Database Access
+@parameters
+cvId: The database ID of the cellview to purge from memory.
+@example
+dbPurge(cvId) ; t
+@desc Purges the specified cellview from virtual memory, discarding any unsaved modifications.
+
+@function dbReopen
+@usage dbReopen(cvId mode)
+@category Database Access
+@parameters
+cvId: The database ID of the cellview to reopen.
+mode: String specifying the new access mode: "r" (read), "w" (write), "a" (append).
+@example
+dbReopen(cvId "a") ; t
+@desc Changes the access mode of an already open cellview database (e.g., upgrading from read-only to append/write).
+
+@function dbCreateRect
+@usage dbCreateRect(cvId layer bBox)
+@category Database Access
+@parameters
+cvId: The database ID of the cellview containing the rectangle.
+layer: List containing the layer name and purpose (e.g., list("M1" "drawing")).
+bBox: List of two points representing the bounding box coordinates (e.g., list(0:0 2:2)).
+@example
+dbCreateRect(cvId list("M1" "drawing") list(0:0 2:2)) ; db:0x2b3c4d5e
+@desc Creates a rectangular shape on the specified layer and layer purpose within the target cellview.
+
+@function dbCreatePath
+@usage dbCreatePath(cvId layer points width)
+@category Database Access
+@parameters
+cvId: The database ID of the cellview.
+layer: List containing the layer name and purpose (e.g., list("M2" "drawing")).
+points: List of coordinates defining the path path-points (e.g., list(0:0 0:5 5:5)).
+width: Floating-point number specifying the path width.
+@example
+dbCreatePath(cvId list("M2" "drawing") list(0:0 0:5 5:5) 0.2) ; db:0x3c4d5e6f
+@desc Creates a path shape with the specified layer, points list, and width in the destination cellview.
+
+@function dbCreatePolygon
+@usage dbCreatePolygon(cvId layer points)
+@category Database Access
+@parameters
+cvId: The database ID of the cellview.
+layer: List containing the layer name and purpose (e.g., list("POLY" "drawing")).
+points: List of coordinate points forming the closed polygon boundary (e.g., list(0:0 0:2 2:2 2:0)).
+@example
+dbCreatePolygon(cvId list("POLY" "drawing") list(0:0 0:2 2:2 2:0)) ; db:0x4d5e6f7a
+@desc Creates a polygon shape in the specified cellview using the list of boundary coordinates.
+
+@function dbCreateLabel
+@usage dbCreateLabel(cvId layer xy text justify orient font height)
+@category Database Access
+@parameters
+cvId: The database ID of the cellview.
+layer: List containing the layer name and purpose (e.g., list("M1" "pin")).
+xy: A coordinate pair list (X:Y) representing the label origin.
+text: String containing the label's text contents.
+justify: String specifying the label justification (e.g., "centerCenter", "lowerLeft").
+orient: String specifying the label orientation (e.g., "R0", "R90").
+font: String specifying the font style (e.g., "roman").
+height: Floating-point number representing the font height.
+@example
+dbCreateLabel(cvId list("M1" "pin") 1.0:1.0 "VDD" "centerCenter" "R0" "roman" 0.1) ; db:0x5e6f7a8b
+@desc Creates a text label in the target cellview with the specified style, orientation, alignment, and coordinate origin.
+
+@function dbCreateInst
+@usage dbCreateInst(cvId masterCvId instName xy orient [numInsts])
+@category Database Access
+@parameters
+cvId: The database ID of the target cellview where the instance will be placed.
+masterCvId: The database ID of the master cellview being instantiated.
+instName: String representing the unique name of the instance (or nil for auto-generation).
+xy: List of X:Y coordinates representing the insertion point.
+orient: String specifying the placement orientation (e.g., "R0", "R90", "MY").
+numInsts: Optional integer specifying the number of arrayed instances.
+@example
+dbCreateInst(cvId masterId "I1" 0:0 "R0") ; db:0x6f7a8b9c
+@desc Creates an instance of a master cellview in the target cellview at the specified coordinate and orientation.
+
+@function dbCreateInstByMasterName
+@usage dbCreateInstByMasterName(cvId libName cellName viewName instName xy orient [numInsts])
+@category Database Access
+@parameters
+cvId: The database ID of the target cellview where the instance will be placed.
+libName: String specifying the library of the master cell.
+cellName: String specifying the cell name of the master.
+viewName: String specifying the view name of the master (typically "layout" or "symbol").
+instName: String specifying the unique name of the instance (or nil for auto-generation).
+xy: List of X:Y coordinates representing the insertion point.
+orient: String specifying the placement orientation (e.g., "R0", "MX").
+numInsts: Optional integer specifying the array count.
+@example
+dbCreateInstByMasterName(cvId "gpdk090" "nmos" "layout" "M0" 2:4 "R0") ; db:0x7a8b9c0d
+@desc Conveniently creates an instance in a target cellview using the master cell's library, cell, and view names directly without needing to open the master first.
+
+@function dbCreateNet
+@usage dbCreateNet(cvId name [sigType])
+@category Database Access
+@parameters
+cvId: The database ID of the cellview.
+name: String specifying the name of the net.
+sigType: Optional string specifying the signal type (e.g., "signal", "power", "ground").
+@example
+dbCreateNet(cvId "VSS" "ground") ; db:0x8b9c0d1e
+@desc Creates a logical net structure inside the specified cellview database.
+
+@function dbCreateTerm
+@usage dbCreateTerm(netId name direction)
+@category Database Access
+@parameters
+netId: The database ID of the logical net to bind to this terminal.
+name: String specifying the name of the terminal.
+direction: String specifying terminal direction (e.g., "input", "output", "inputOutput").
+@example
+dbCreateTerm(netId "CLK" "input") ; db:0x9c0d1e2f
+@desc Creates a terminal (port) on a specific logical net within a cellview database.
+
+@function dbCreatePin
+@usage dbCreatePin(netId figId [name])
+@category Database Access
+@parameters
+netId: The database ID of the logical net associated with the pin.
+figId: The database ID of the physical shape (rect, polygon, etc.) representing the pin connection point.
+name: Optional string specifying the name of the pin.
+@example
+dbCreatePin(netId rectId "VDD") ; db:0xa1b2c3d4
+@desc Binds a physical shape to a logical net to define a physical connection pin on a cellview interface.
+
+@function dbFindNetByName
+@usage dbFindNetByName(cvId name)
+@category Database Access
+@parameters
+cvId: The database ID of the cellview.
+name: String specifying the name of the net.
+@example
+dbFindNetByName(cvId "VDD") ; db:0xb2c3d4e5
+@desc Searches for a logical net in the specified cellview by its name. Returns the net database ID if found, nil otherwise.
+
+@function dbFindAnyInstByName
+@usage dbFindAnyInstByName(cvId name)
+@category Database Access
+@parameters
+cvId: The database ID of the cellview.
+name: String specifying the name of the instance.
+@example
+dbFindAnyInstByName(cvId "I0") ; db:0xc3d4e5f6
+@desc Searches for a cell instance in the target cellview by its assigned instance name. Returns the instance ID or nil.
+
+@function dbMove
+@usage dbMove(figIdList cvId transform)
+@category Database Access
+@parameters
+figIdList: List of database IDs of the figures or instances to move.
+cvId: The database ID of the destination cellview.
+transform: Transformation list representation containing offsets and rotation details (e.g., list(1:1 "R0" 1.0)).
+@example
+dbMove(list(rectId) cvId list(2.0:0.0 "R90")) ; t
+@desc Moves specified database figures to a target location in a cellview, applying a spatial coordinate translation or rotation transform.
+
+@function dbCopy
+@usage dbCopy(figIdList cvId transform)
+@category Database Access
+@parameters
+figIdList: List of database IDs of the figures or instances to duplicate.
+cvId: The database ID of the destination cellview.
+transform: Transformation list representation containing offsets and rotation details (e.g., list(0:0 "R0" 1.0)).
+@example
+dbCopy(list(instId) cvId list(10.0:10.0 "R0")) ; list(db:0xd4e5f6a7)
+@desc Duplicates the database figures from the input list and places the copies in the target cellview applying the specified transform.
+
+@function dbTransformPoint
+@usage dbTransformPoint(point transform)
+@category Database Access
+@parameters
+point: A coordinate point list (X:Y) to transform.
+transform: A transformation list (e.g., list(offsetX:offsetY orientation magnification)).
+@example
+dbTransformPoint(1.0:1.0 list(2.0:3.0 "R90")) ; 1.0:4.0
+@desc Translates and rotates an input point coordinate according to a specified transformation description.
+
+@function dbConcatTransform
+@usage dbConcatTransform(transform1 transform2)
+@category Database Access
+@parameters
+transform1: First transformation list.
+transform2: Second transformation list.
+@example
+dbConcatTransform(list(1:1 "R90") list(2:3 "R180")) ; list(3:4 "R270" 1.0)
+@desc Merges two coordinate transformation operations into a single equivalent mathematical transformation list.
+
+@function geGetEditCellView
+@usage geGetEditCellView([w_windowId])
+@category Graphic Editor
+@parameters
+w_windowId: The window ID for which to get the edit cellview. Defaults to the current window if not specified.
+@example
+cv = geGetEditCellView() ; Get cellview of current window
+@desc Returns the database ID of the cellview currently being edited in the specified window.
+
+@function geGetWindowCellView
+@usage geGetWindowCellView([w_windowId])
+@category Graphic Editor
+@parameters
+w_windowId: Optional window identifier. If omitted, the current active window is used.
+@example
+cvId = geGetWindowCellView(hiGetCurrentWindow()) ; Get the cellview of the active window
+@desc Returns the database ID of the cellview displayed in the specified window, which may be different from the edit cellview if viewing in read-only or reference mode.
+
+@function geGetSelectedSet
+@usage geGetSelectedSet([w_windowId])
+@category Graphic Editor
+@parameters
+w_windowId: The window ID from which to retrieve the selected objects. Defaults to the current window.
+@example
+selObjs = geGetSelectedSet() ; Retrieve all currently selected layout shapes
+@desc Returns a list of database IDs representing all selected objects in the specified graphic editor window.
+
+@function geDeselectAll
+@usage geDeselectAll([w_windowId])
+@category Graphic Editor
+@parameters
+w_windowId: Optional window ID. Defaults to the current active window.
+@example
+geDeselectAll() ; Deselect all layout elements in the active window
+@desc Deselects all selected figures in the specified window canvas.
+
+@function geSelectFig
+@usage geSelectFig(d_figId)
+@category Graphic Editor
+@parameters
+d_figId: Database ID of the figure/shape to select.
+@example
+geSelectFig(rectId) ; Select the specified rectangle shape programmatically
+@desc Adds the specified database figure (shape, instance, etc.) to the selection set in the current graphic editor window.
+
+@function gePointToGrid
+@usage gePointToGrid(w_windowId l_point)
+@category Graphic Editor
+@parameters
+w_windowId: Window ID used to determine the snap grid settings.
+l_point: A list representing the coordinate coordinates (X Y) to be snapped.
+@example
+snappedPt = gePointToGrid(hiGetCurrentWindow() list(1.234 5.678)) ; Snap coordinate to grid
+@desc Snaps the given coordinate point to the manufacturing or user grid associated with the specified window.
+
+@function geRefresh
+@usage geRefresh([w_windowId])
+@category Graphic Editor
+@parameters
+w_windowId: The window ID of the graphic window to refresh. Defaults to the current window.
+@example
+geRefresh(hiGetCurrentWindow()) ; Force redraw of the current layout canvas
+@desc Redraws/refreshes the contents of the specified graphic window to clean up visual artifacts.
+
+@function geZoomArea
+@usage geZoomArea(w_windowId l_bbox)
+@category Graphic Editor
+@parameters
+w_windowId: Window identifier to apply the zoom.
+l_bbox: Bounding box list of the area to zoom into, formatted as ((x1 y1) (x2 y2)).
+@example
+geZoomArea(hiGetCurrentWindow() list(list(0 0) list(10 10))) ; Zoom into region from 0,0 to 10,10
+@desc Zooms the specified window view to the bounds defined by the given bounding box.
+
+@function geZoomToGrid
+@usage geZoomToGrid(w_windowId f_grid)
+@category Graphic Editor
+@parameters
+w_windowId: Window ID to adjust zoom levels.
+f_grid: Snap grid value as a float.
+@example
+geZoomToGrid(hiGetCurrentWindow() 0.005) ; Change zoom level relative to a grid factor
+@desc Adjusts the window zoom level to optimize viewing of the specified grid resolution.
+
+@function geGetEditRep
+@usage geGetEditRep([w_windowId])
+@category Graphic Editor
+@parameters
+w_windowId: Optional window ID. Defaults to the current window.
+@example
+editCv = geGetEditRep() ; Returns the dbid of the current edit representation
+@desc Returns the database ID of the cellview representation currently being edited. Equivalent to geGetEditCellView in most contexts.
+
+@function leCreatePath
+@usage leCreatePath(d_cellView l_layer l_points f_width [s_justification])
+@category Layout Editor
+@parameters
+d_cellView: Database ID of the target cellview.
+l_layer: List containing layer name and purpose, e.g., list("M1" "drawing").
+l_points: List of points defining the path trajectory, e.g., list(0:0 10:0).
+f_width: Float specifying the width of the path.
+s_justification: Optional justification string ("center", "left", "right"). Defaults to "center".
+@example
+leCreatePath(cvId list("M1" "drawing") list(0:0 5:0 5:5) 0.1) ; Create Metal1 path
+@desc Creates a physical path shape in the specified cellview using the given layer, points, width, and alignment.
+
+@function leCreateRect
+@usage leCreateRect(d_cellView l_layer l_bBox)
+@category Layout Editor
+@parameters
+d_cellView: Database ID of the target cellview.
+l_layer: Layer-purpose pair, e.g., list("M2" "drawing").
+l_bBox: Bounding box list of the rectangle: list(list(x1 y1) list(x2 y2)).
+@example
+leCreateRect(cvId list("M2" "drawing") list(0:0 2:2)) ; Create Metal2 rectangle
+@desc Creates a rectangular shape on the specified layer and bounding box within the target cellview.
+
+@function leHiCreatePath
+@usage leHiCreatePath()
+@category Layout Editor
+@parameters
+None: This function does not accept arguments.
+@example
+leHiCreatePath() ; Open interactive path creation tool
+@desc Launches the interactive graphical user interface command for drawing layout paths in Virtuoso.
+
+@function leHiCreateRect
+@usage leHiCreateRect()
+@category Layout Editor
+@parameters
+None: This function does not accept arguments.
+@example
+leHiCreateRect() ; Open interactive rectangle creation tool
+@desc Launches the interactive graphical user interface command for drawing rectangular shapes on the layout canvas.
+
+@function leMergeShapes
+@usage leMergeShapes(l_shapes)
+@category Layout Editor
+@parameters
+l_shapes: List of database IDs of the layout shapes to merge.
+@example
+leMergeShapes(geGetSelectedSet()) ; Merge all currently selected shapes
+@desc Merges touching or overlapping layout shapes of the same layer into single polygon shapes.
+
+@function leSize
+@usage leSize(d_cellView l_shapes f_delta [l_layer])
+@category Layout Editor
+@parameters
+d_cellView: Database ID of the target cellview.
+l_shapes: List of shape database IDs to size (bloat or shrink).
+f_delta: Float value representing the sizing amount (positive to bloat, negative to shrink).
+l_layer: Optional layer/purpose pair to assign to the sized shapes. If omitted, source layers are used.
+@example
+leSize(cvId list(rectId) 0.05) ; Bloat the rectangle shape by 0.05 units
+@desc Sizes/oversizes/undersizes the specified shape list by the given delta distance value.
+
+@function leChopShape
+@usage leChopShape(d_shape l_points [b_keepCut])
+@category Layout Editor
+@parameters
+d_shape: Database ID of the shape to be chopped.
+l_points: Bounding box or polygon points defining the area to cut/chop.
+b_keepCut: Optional boolean indicating whether to keep the cut-out portion.
+@example
+leChopShape(polyId list(0:0 1:0 1:1 0:1) t) ; Chop shape within the bounding square
+@desc Cuts out or chops a region of an existing shape using a specified polygon area boundary.
+
+@function leYank
+@usage leYank(d_cellView l_bBox [b_hierarchy] [b_flat])
+@category Layout Editor
+@parameters
+d_cellView: Database ID of the cellview to yank from.
+l_bBox: Bounding box specifying the yank area.
+b_hierarchy: Optional boolean to determine if yank searches through the hierarchy.
+b_flat: Optional boolean to flatten the yanked database elements.
+@example
+leYank(cvId list(0:0 5:5) t t) ; Yank hierarchical layout content in bounding box and flatten it
+@desc Copies/yanks layout elements located within a specific bounding box window, optionally traversing down the cell hierarchy.
+
+@function leSplitShape
+@usage leSplitShape(d_shape l_linePoints)
+@category Layout Editor
+@parameters
+d_shape: Database ID of the shape to split.
+l_linePoints: List of two coordinate points defining the cutting line.
+@example
+leSplitShape(polyId list(-1:5 10:5)) ; Split a shape in half horizontally along Y=5
+@desc Splits a single layout polygon or path into separate distinct shapes along a specified cutting line.
+
+@function leConvertPolygonToPath
+@usage leConvertPolygonToPath(d_polygon f_width)
+@category Layout Editor
+@parameters
+d_polygon: Database ID of the polygon shape to convert.
+f_width: Float specifying the target path width.
+@example
+leConvertPolygonToPath(polyId 0.2) ; Convert a polygon shape into a path of width 0.2
+@desc Converts a polygon database shape into a layout path of the specified width if the geometry permits.
+
+@function hiCreateAppForm
+@usage hiCreateAppForm(?name s_name ?formTitle s_title ?fields l_fields ?callback s_callback)
+@category Human Interface
+@parameters
+?name: Symbol naming the form.
+?formTitle: String title displayed on the form header.
+?fields: List of field structures to include in the form.
+?callback: Symbol or string representing the function to call when 'OK' or 'Apply' is pressed.
+@example
+hiCreateAppForm(?name 'myForm ?formTitle "My Form" ?fields list(myStringField) ?callback 'myCallback) ; Creates an application form
+@desc Creates a new application form containing specified user interface fields.
+
+@function hiDisplayForm
+@usage hiDisplayForm(r_form [l_location])
+@category Human Interface
+@parameters
+r_form: Form handle or symbol to display.
+l_location: Optional list of coordinates (x y) indicating where to display the form.
+@example
+hiDisplayForm(myForm) ; Displays the specified form
+@desc Displays an existing application form on the screen.
+
+@function hiCreateStringField
+@usage hiCreateStringField(?name s_name ?prompt s_prompt ?value s_value ?callback s_callback)
+@category Human Interface
+@parameters
+?name: Symbol naming the string field.
+?prompt: String label displayed next to the text entry area.
+?value: Initial string value of the field.
+?callback: Callback executed when the field text changes.
+@example
+hiCreateStringField(?name 'myStrField ?prompt "Enter Name:" ?value "Default") ; Creates a string input field
+@desc Creates a string input field to accept user text input in a form.
+
+@function hiCreateButtonField
+@usage hiCreateButtonField(?name s_name ?value s_value ?callback s_callback)
+@category Human Interface
+@parameters
+?name: Symbol naming the button.
+?value: Label text displayed on the button.
+?callback: Code/function triggered when the button is pressed.
+@example
+hiCreateButtonField(?name 'myBtn ?value "Press Me" ?callback "myBtnCB()") ; Creates a push button
+@desc Creates a standard push-button field for user execution of actions.
+
+@function hiCreateToggleField
+@usage hiCreateToggleField(?name s_name ?prompt s_prompt ?choices l_choices ?value l_value)
+@category Human Interface
+@parameters
+?name: Symbol naming the toggle field.
+?prompt: Label for the toggle group.
+?choices: List of strings/icons representing choices.
+?value: List of booleans showing the initial state of each choice.
+@example
+hiCreateToggleField(?name 'myToggle ?prompt "Options" ?choices list("A" "B") ?value list(t nil)) ; Creates checkbox toggle
+@desc Creates a toggle button (checkbox) field for selecting multiple boolean options.
+
+@function hiCreateRadioField
+@usage hiCreateRadioField(?name s_name ?prompt s_prompt ?choices l_choices ?value s_value)
+@category Human Interface
+@parameters
+?name: Symbol naming the radio field.
+?prompt: Label for the radio group.
+?choices: List of strings representing the options.
+?value: The initially selected choice.
+@example
+hiCreateRadioField(?name 'myRadio ?prompt "Select One" ?choices list("Yes" "No") ?value "Yes") ; Creates radio button group
+@desc Creates a radio button group where only a single item can be selected at one time.
+
+@function hiCreateCyclicField
+@usage hiCreateCyclicField(?name s_name ?prompt s_prompt ?choices l_choices ?value s_value)
+@category Human Interface
+@parameters
+?name: Symbol naming the cyclic field.
+?prompt: Label displayed next to the cyclic selector.
+?choices: List of strings for options.
+?value: Initially selected string value.
+@example
+hiCreateCyclicField(?name 'myCyclic ?prompt "Mode:" ?choices list("Read" "Write" "Append") ?value "Read") ; Creates dropdown selector
+@desc Creates a cyclic button field, representing a dropdown list or rotating options.
+
+@function hiCreateListBoxField
+@usage hiCreateListBoxField(?name s_name ?prompt s_prompt ?choices l_choices ?value l_value)
+@category Human Interface
+@parameters
+?name: Symbol naming the list box field.
+?prompt: Label displayed above the list box.
+?choices: List of string options to display.
+?value: List of selected items or single selected item.
+@example
+hiCreateListBoxField(?name 'myList ?prompt "Select items" ?choices list("Item1" "Item2")) ; Creates listbox field
+@desc Creates a scrollable list box allowing selection of one or multiple items.
+
+@function hiCreateIntField
+@usage hiCreateIntField(?name s_name ?prompt s_prompt ?value x_value)
+@category Human Interface
+@parameters
+?name: Symbol naming the integer field.
+?prompt: Label for the numeric input.
+?value: Initial integer value.
+@example
+hiCreateIntField(?name 'myIntField ?prompt "Count:" ?value 10) ; Creates integer input field
+@desc Creates an input field restricted to integer numeric entries.
+
+@function hiCreateFloatField
+@usage hiCreateFloatField(?name s_name ?prompt s_prompt ?value g_value)
+@category Human Interface
+@parameters
+?name: Symbol naming the float field.
+?prompt: Label for the numeric input.
+?value: Initial floating-point value.
+@example
+hiCreateFloatField(?name 'myFloatField ?prompt "Width:" ?value 1.25) ; Creates floating-point input field
+@desc Creates an input field restricted to floating-point numeric entries.
+
+@function hiEnqueueCmd
+@usage hiEnqueueCmd(s_command)
+@category Human Interface
+@parameters
+s_command: String representing the SKILL command or expression to queue.
+@example
+hiEnqueueCmd("println(\"Command Executed!\")") ; Queues a command for background execution
+@desc Places a command into the window command queue for execution after the current process finishes.
+
+@function hiGetCurrentWindow
+@usage hiGetCurrentWindow()
+@category Human Interface
+@parameters
+None: No arguments required.
+@example
+currWin = hiGetCurrentWindow() ; Retrieves the currently active window database ID
+@desc Returns the database ID of the currently active window on screen.
+
+@function hiGetWindowGeometry
+@usage hiGetWindowGeometry(w_windowId)
+@category Human Interface
+@parameters
+w_windowId: The window object ID to query.
+@example
+geom = hiGetWindowGeometry(hiGetCurrentWindow()) ; Gets coordinates of current window
+@desc Returns the coordinates and size of the specified window as a list of bounding coordinates.
+
+@function hiGetAttention
+@usage hiGetAttention([w_windowId])
+@category Human Interface
+@parameters
+w_windowId: Optional window identifier. If omitted, applies to the current session.
+@example
+hiGetAttention() ; Causes system alert beep or flash
+@desc Alerts the user by flashing the specified window or playing an alert tone.
+
+@function hiWriteMessage
+@usage hiWriteMessage(s_message)
+@category Human Interface
+@parameters
+s_message: String message to write.
+@example
+hiWriteMessage("Operation completed successfully.") ; Writes message to prompt area
+@desc Writes a text string to the main command prompt or CIW window output area.
+
+@function hiMessagePage
+@usage hiMessagePage(s_title s_text)
+@category Human Interface
+@parameters
+s_title: Title of the message window.
+s_text: Full body text of the message window.
+@example
+hiMessagePage("Help Manual" "Welcome to SKILL programming.") ; Displays modal documentation window
+@desc Displays an scrollable message box containing text information, useful for help windows.
+
+@function hiRegTimer
+@usage hiRegTimer(s_command x_delay)
+@category Human Interface
+@parameters
+s_command: Command string to execute.
+x_delay: Delay time in tenths of a second.
+@example
+hiRegTimer("println(\"Tick!\")" 50) ; Registers timer to run command after 5 seconds
+@desc Runs a specified SKILL command after a designated delay time has elapsed.
+
+@function hiSetBindKey
+@usage hiSetBindKey(s_appName s_key s_command)
+@category Human Interface
+@parameters
+s_appName: Name of the application (e.g., "Layout", "Schematics").
+s_key: Key or sequence of keys.
+s_command: Command execution string mapped to the key.
+@example
+hiSetBindKey("Layout" "<Key>F2" "leHiCreatePath()") ; Sets standard shortcut for F2 in Layout
+@desc Binds a keyboard key or key sequence to a specified SKILL command for a given application context.
+
+@function hiGetBindKey
+@usage hiGetBindKey(s_appName s_key)
+@category Human Interface
+@parameters
+s_appName: Name of the application.
+s_key: Key or key sequence identifier.
+@example
+cmd = hiGetBindKey("Layout" "<Key>F2") ; Returns shortcut definition for layout F2 key
+@desc Returns the SKILL command string bound to a specified key for a given application.
+
+@function hiPan
+@usage hiPan(w_windowId l_point)
+@category Human Interface
+@parameters
+w_windowId: Target graphic window object ID.
+l_point: List containing X and Y coordinates (x y) to centralize.
+@example
+hiPan(hiGetCurrentWindow() list(10.0 20.0)) ; Centers view on coordinates (10, 20)
+@desc Pans the current graphic viewport view to center on the specified coordinate.
+
+@function hiZoomIn
+@usage hiZoomIn(w_windowId l_bbox)
+@category Human Interface
+@parameters
+w_windowId: Graphic window ID to zoom.
+l_bbox: Bounding box coordinate list representation: ((x1 y1) (x2 y2)).
+@example
+hiZoomIn(hiGetCurrentWindow() list(list(0 0) list(100 100))) ; Zooms window view to box area
+@desc Zooms the view window in to display the specified bounding box area.
+
+@function schCreateInst
+@usage schCreateInst(cvId masterCvId instName xyOrient [numInsts])
+@category Schematic Editor
+@parameters
+cvId: dbId of the target schematic cellview
+masterCvId: dbId of the master cellview to be instantiated
+instName: String name of the instance, or nil for automatic naming
+xyOrient: List containing the coordinate list (x y) and the orientation string (e.g., "R0")
+numInsts: Optional integer indicating the number of instances
+@example
+schCreateInst(cv masterCv "I1" list(1.0 2.0 "R0")) ; Places masterCv at (1.0, 2.0) with R0 orientation
+@desc Places an instance of a master cellview into a target schematic cellview at a specified coordinate with a given orientation.
+
+@function schCreateWire
+@usage schCreateWire(cvId wireType routeType points [width])
+@category Schematic Editor
+@parameters
+cvId: dbId of the target schematic cellview
+wireType: String specifying the wire type, usually "draw" or "flight"
+routeType: String specifying route style, such as "orthogonal" or "direct"
+points: List of point coordinates (lists of x and y) defining the wire path
+width: Optional float value specifying the wire width
+@example
+schCreateWire(cvId "draw" "orthogonal" list(0:0 1:0 1:1)) ; Draws an orthogonal wire from (0,0) to (1,1)
+@desc Creates a wire path in a schematic cellview using the specified routing style and coordinates.
+
+@function schCreatePin
+@usage schCreatePin(cvId masterPinCv pinName pinType termType xyOrient)
+@category Schematic Editor
+@parameters
+cvId: dbId of the schematic cellview
+masterPinCv: dbId of the master pin cellview (often from basic library)
+pinName: String name of the pin
+pinType: String type of the pin, typically "input", "output", or "inputOutput"
+termType: String type of terminal (usually "square" or other physical shapes)
+xyOrient: List containing coordinates and orientation, e.g., list(0.0 0.0 "R0")
+@example
+schCreatePin(cv pinMaster "VDD" "inputOutput" "square" list(0.0 0.0 "R0")) ; Creates an inputOutput pin named VDD
+@desc Creates a schematic pin with a specified name, type, and location, attaching it to the target schematic cellview.
+
+@function schCheck
+@usage schCheck(cvId)
+@category Schematic Editor
+@parameters
+cvId: dbId of the schematic cellview to be checked
+@example
+schCheck(cvId) ; Runs the schematic extraction and connection checks
+@desc Performs a Schematic Check and Save operation on the specified cellview, verifying connectivity, floating nets, and basic schematic rules.
+
+@function schGetEnv
+@usage schGetEnv(varName)
+@category Schematic Editor
+@parameters
+varName: String representing the name of the schematic environment variable
+@example
+schGetEnv("createWireWidth") ; Returns the default schematic wire width
+@desc Retrieves the current value of an environment variable specific to the Cadence Virtuoso Schematic Editor.
+
+@function schSetEnv
+@usage schSetEnv(varName value)
+@category Schematic Editor
+@parameters
+varName: String representing the schematic environment variable
+value: The new value (type depends on the variable, e.g., string, boolean, float)
+@example
+schSetEnv("createWireWidth" 0.0625) ; Sets the default schematic wire width to 0.0625
+@desc Configures a schematic editor environment variable to the specified value.
+
+@function schViewToCellView
+@usage schViewToCellView(libName cellName fromView toView tool)
+@category Schematic Editor
+@parameters
+libName: String specifying the library name
+cellName: String specifying the cell name
+fromView: String specifying the source view name (e.g., "schematic")
+toView: String specifying the destination view name (e.g., "symbol")
+tool: String specifying the generator tool name (e.g., "schPinListToSymbol")
+@example
+schViewToCellView("myLib" "myCell" "schematic" "symbol" "schPinListToSymbol") ; Automatically generates a symbol view from schematic
+@desc Generates a cellview (such as a symbol) based on another cellview (such as a schematic) using a specified tool.
+
+@function schCreateNoteText
+@usage schCreateNoteText(cvId xy text height [justify] [orient] [font])
+@category Schematic Editor
+@parameters
+cvId: dbId of the target schematic cellview
+xy: List containing coordinates (x y)
+text: String value of the note text to be placed
+height: Float representing text height
+justify: Optional string representing justification, e.g., "lowerLeft"
+orient: Optional string representing text orientation, e.g., "R0"
+font: Optional string representing font type, e.g., "roman"
+@example
+schCreateNoteText(cv 0:0 "Review Needed" 0.1) ; Places a note text at origin
+@desc Adds informational note text (non-net/non-pin text label) to a schematic cellview at the designated location.
+
+@function schHiCreateInst
+@usage schHiCreateInst()
+@category Schematic Editor
+@parameters
+None: This is an interactive GUI command
+@example
+schHiCreateInst() ; Launches the interactive "Add Instance" dialog in Virtuoso
+@desc Opens the user interface dialog for creating and placing cell instances within the active schematic window.
+
+@function schHiCreateWire
+@usage schHiCreateWire()
+@category Schematic Editor
+@parameters
+None: This is an interactive GUI command
+@example
+schHiCreateWire() ; Launches the interactive wire creation mode
+@desc Activates the interactive wire drawing tool in the current Virtuoso schematic session.
+
+@function ddGetObj
+@usage ddGetObj(libName [cellName] [viewName] [fileName] [contextObj] [mode])
+@category Data Dictionary
+@parameters
+libName: String name of the Cadence library
+cellName: Optional string name of the cell
+viewName: Optional string name of the view
+fileName: Optional string file name within the view
+contextObj: Optional DD object context
+mode: Optional access mode, such as "r" for read or "w" for write
+@example
+ddGetObj("analogLib" "res" "symbol") ; Gets the DD object for the analogLib resistor symbol
+@desc Retrieves a data dictionary object corresponding to a library, cell, view, or file, allowing access to physical filesystem structures.
+
+@function ddReleaseObj
+@usage ddReleaseObj(ddId)
+@category Data Dictionary
+@parameters
+ddId: The DD object ID to release from memory
+@example
+ddReleaseObj(libObj) ; Releases the lock and memory reference for the library object
+@desc Releases a previously retrieved data dictionary object from memory, freeing system resources.
+
+@function ddGetLibList
+@usage ddGetLibList()
+@category Data Dictionary
+@parameters
+None: Takes no parameters
+@example
+ddGetLibList() ; Returns a list of all library objects active in the current session
+@desc Returns a list of all data dictionary library objects currently defined in the active cds.lib file.
+
+@function ddCreateLib
+@usage ddCreateLib(libName [path])
+@category Data Dictionary
+@parameters
+libName: String name of the library to create
+path: Optional string path where the library directory should be created
+@example
+ddCreateLib("myNewLib" "/usr/work/myNewLib") ; Creates a library at the specified directory path
+@desc Creates a new Cadence library on the disk and registers it within the active Cadence session configuration.
+
+@function ddCreateCell
+@usage ddCreateCell(libObj cellName)
+@category Data Dictionary
+@parameters
+libObj: DD object representing the parent library
+cellName: String name of the cell to create
+@example
+ddCreateCell(libObj "myAmplifier") ; Creates a new cell within the target library object
+@desc Creates a new cell subdirectory inside the directory of the specified library data dictionary object.
+
+@function ddCreateView
+@usage ddCreateView(cellObj viewName [viewType])
+@category Data Dictionary
+@parameters
+cellObj: DD object representing the parent cell
+viewName: String name of the view to create
+viewType: Optional string defining the view type, such as "schematic" or "layout"
+@example
+ddCreateView(cellObj "schematic" "schematic") ; Creates a schematic view under the parent cell
+@desc Creates a new view subdirectory inside the directory of the specified cell data dictionary object.
+
+@function ddUpdateLibList
+@usage ddUpdateLibList()
+@category Data Dictionary
+@parameters
+None: Takes no parameters
+@example
+ddUpdateLibList() ; Forces the Cadence session to re-read and apply updates from cds.lib
+@desc Forces the Cadence session to dynamically update the internal library list by reading additions or deletions in the 'cds.lib' file.
+
+@function ddGetObjReadPath
+@usage ddGetObjReadPath(ddId)
+@category Data Dictionary
+@parameters
+ddId: DD object ID of a library, cell, view, or file
+@example
+ddGetObjReadPath(viewObj) ; Returns "/project/libs/myLib/myCell/schematic"
+@desc Returns the full read filesystem path of the specified data dictionary object.
+
+@function ddGetObjWritePath
+@usage ddGetObjWritePath(ddId)
+@category Data Dictionary
+@parameters
+ddId: DD object ID of a library, cell, view, or file
+@example
+ddGetObjWritePath(viewObj) ; Returns the physical path where modifications to the object will be written
+@desc Returns the full write filesystem path of the specified data dictionary object, taking into account any design management configurations.
+
+@function ddAutoCheckout
+@usage ddAutoCheckout(ddId)
+@category Data Dictionary
+@parameters
+ddId: DD object ID representing the file or cellview to check out
+@example
+ddAutoCheckout(viewObj) ; Triggers revision control integration to check out the file
+@desc Programmatically triggers the revision control auto-checkout mechanism for the specified data dictionary object.
+
+@function techOpenTechFile
+@usage techOpenTechFile(t_libName t_fileName t_mode)
+@category Technology File
+@parameters
+t_libName: Name of the library associated with the technology file.
+t_fileName: Name of the tech file (typically "tech.db").
+t_mode: Access mode for opening the file ("r" for read, "w" for write, "a" for append).
+@example
+tf = techOpenTechFile("gpdk090" "tech.db" "r") ; Opens the GPDK90 tech file in read-only mode
+@desc Opens a technology file for a specified library and returns the technology database ID, allowing access to its physical rules and layers.
+
+@function techGetTechFile
+@usage techGetTechFile(d_cellView)
+@category Technology File
+@parameters
+d_cellView: Database ID of the cellview whose technology file is to be retrieved.
+@example
+tf = techGetTechFile(geGetEditCellView()) ; Gets the tech file ID associated with the active cellview
+@desc Returns the technology file database ID associated with the specified cellview.
+
+@function techGetSpacingRule
+@usage techGetSpacingRule(d_techFile t_ruleName [t_layer1] [t_layer2])
+@category Technology File
+@parameters
+d_techFile: Technology file database ID.
+t_ruleName: Name of the spacing rule to query (e.g., "minSpacing").
+t_layer1: Optional name of the first layer.
+t_layer2: Optional name of the second layer.
+@example
+minSpacing = techGetSpacingRule(tf "minSpacing" "M1") ; Retrieves the minimum spacing for Metal1
+@desc Returns the value of a spacing rule for specified layers from the technology file.
+
+@function techGetConstraintGroup
+@usage techGetConstraintGroup(d_techFile t_groupName)
+@category Technology File
+@parameters
+d_techFile: Technology file database ID.
+t_groupName: Name of the constraint group (e.g., "foundry" or "virtuosoDefaultSetup").
+@example
+cg = techGetConstraintGroup(tf "foundry") ; Retrieves the foundry constraint group
+@desc Returns the constraint group database ID for the specified constraint group name within the tech file.
+
+@function techFindConstraintGroup
+@usage techFindConstraintGroup(d_techFile t_groupName)
+@category Technology File
+@parameters
+d_techFile: Technology file database ID.
+t_groupName: Name of the constraint group.
+@example
+cg = techFindConstraintGroup(tf "leSpacing") ; Search and return the 'leSpacing' group ID if exists
+@desc Finds and returns the database ID of the specified constraint group in the technology file, returning nil if it is not found.
+
+@function techGetLayerPurposeValue
+@usage techGetLayerPurposeValue(d_techFile t_layerName t_purposeName)
+@category Technology File
+@parameters
+d_techFile: Technology file database ID.
+t_layerName: Name of the design layer (e.g., "M1").
+t_purposeName: Name of the purpose (e.g., "drawing").
+@example
+lppVal = techGetLayerPurposeValue(tf "M1" "drawing") ; Returns the internal LPP representation
+@desc Returns the layer-purpose pair (LPP) integer representation or ID for the given layer and purpose name.
+
+@function techGetLPAttr
+@usage techGetLPAttr(d_techFile t_attribute t_layerName t_purposeName)
+@category Technology File
+@parameters
+d_techFile: Technology file database ID.
+t_attribute: Attribute name to retrieve (e.g., "color", "fill", "visible", "selectable").
+t_layerName: Name of the layer.
+t_purposeName: Name of the purpose.
+@example
+isSel = techGetLPAttr(tf "selectable" "M1" "drawing") ; Checks if M1 drawing is selectable
+@desc Returns the specified display or physical attribute value for a layer-purpose pair in the technology file.
+
+@function techIsLayerValid
+@usage techIsLayerValid(d_techFile t_layerName)
+@category Technology File
+@parameters
+d_techFile: Technology file database ID.
+t_layerName: Name of the layer to validate.
+@example
+isValid = techIsLayerValid(tf "M1") ; Checks if 'M1' is a valid layer in the technology file
+@desc Checks and returns t if the specified layer name is valid and defined in the given technology file, otherwise returns nil.
+
+@function techGetLayerNum
+@usage techGetLayerNum(d_techFile t_layerName)
+@category Technology File
+@parameters
+d_techFile: Technology file database ID.
+t_layerName: Name of the layer.
+@example
+layerNum = techGetLayerNum(tf "M1") ; Retrieves the internal integer number of M1
+@desc Returns the technology file internal layer number corresponding to the specified layer name.
+
+@function techGetDeviceClass
+@usage techGetDeviceClass(d_techFile t_className)
+@category Technology File
+@parameters
+d_techFile: Technology file database ID.
+t_className: Name of the device class.
+@example
+devClass = techGetDeviceClass(tf "transistor") ; Retrieves the transistor class definition
+@desc Returns the device class object for the specified device class name from the technology file.
+
+@function rodCreateRect
+@usage rodCreateRect([?name t_name] [?cvId d_cvId] [?layer t_layer] [?bBox l_bBox] [?width r_width] [?length r_length] [?origin l_origin])
+@category Relative Object Design
+@parameters
+?name: Optional unique name to assign to the created ROD object.
+?cvId: Cellview database ID where the rectangle is created (defaults to current cellview).
+?layer: Layer-purpose pair name list (e.g., list("M1" "drawing")).
+?bBox: Bounding box list of the rectangle coordinates.
+?width: Width of the rectangle (alternative to using bBox).
+?length: Length of the rectangle (alternative to using bBox).
+?origin: Coordinate point list representing the origin of the rectangle.
+@example
+rodCreateRect(?name "myRect" ?layer list("M1" "drawing") ?width 2.0 ?length 4.0 ?origin 0:0) ; Creates a 2x4 ROD rectangle at 0,0
+@desc Creates a rectangular Relative Object Design (ROD) object in the specified cellview with built-in reference handles.
+
+@function rodCreatePath
+@usage rodCreatePath([?name t_name] [?cvId d_cvId] [?layer t_layer] [?pts l_pts] [?width r_width] [?justification t_justification] [?offset r_offset])
+@category Relative Object Design
+@parameters
+?name: Optional name for the path object.
+?cvId: Cellview database ID.
+?layer: Layer-purpose pair list.
+?pts: List of coordinate points defining the path vertices.
+?width: Width of the path.
+?justification: Alignment of the path relative to the coordinates ("center", "left", "right").
+?offset: Offset distance from the path centerline.
+@example
+rodCreatePath(?name "myPath" ?layer list("M2" "drawing") ?pts list(0:0 10:0 10:10) ?width 0.4) ; Creates a L-shaped ROD path
+@desc Creates a relative object design path object with accessible handles at every vertex, centerline, and edge boundary.
+
+@function rodCreatePolygon
+@usage rodCreatePolygon([?name t_name] [?cvId d_cvId] [?layer t_layer] [?pts l_pts])
+@category Relative Object Design
+@parameters
+?name: Optional name for the polygon.
+?cvId: Cellview database ID.
+?layer: Layer-purpose pair list.
+?pts: List of coordinate points representing the vertices of the polygon.
+@example
+rodCreatePolygon(?name "poly1" ?layer list("poly" "drawing") ?pts list(0:0 2:0 2:2 0:2)) ; Creates a square ROD polygon
+@desc Creates a relative object design polygon object with handles dynamically assigned to its vertices and midpoints.
+
+@function rodAlign
+@usage rodAlign([?alignObj r_alignObj] [?alignHandle t_alignHandle] [?refObj r_refObj] [?refHandle t_refHandle] [?xAlign t_xAlign] [?yAlign t_yAlign] [?xOffset r_xOffset] [?yOffset r_yOffset])
+@category Relative Object Design
+@parameters
+?alignObj: The ROD object to be aligned.
+?alignHandle: The handle on the alignment object to align.
+?refObj: The reference ROD object.
+?refHandle: The handle on the reference object to align against.
+?xAlign: X alignment mode ("Left", "Center", "Right").
+?yAlign: Y alignment mode ("Bottom", "Center", "Top").
+?xOffset: Offset distance in the X direction.
+?yOffset: Offset distance in the Y direction.
+@example
+rodAlign(?alignObj obj1 ?alignHandle "lowerLeft" ?refObj obj2 ?refHandle "upperRight" ?xOffset 0.2) ; Aligns obj1's lowerLeft to obj2's upperRight with a 0.2 offset
+@desc Aligns one relative object design (ROD) object directly to another using predefined handle locations.
+
+@function rodAssignAlign
+@usage rodAssignAlign([?alignObj r_alignObj] [?alignHandle t_alignHandle] [?refObj r_refObj] [?refHandle t_refHandle] [?xAlign t_xAlign] [?yAlign t_yAlign] [?xOffset r_xOffset] [?yOffset r_yOffset])
+@category Relative Object Design
+@parameters
+?alignObj: The ROD object to be constrained.
+?alignHandle: Handle name of the object to be aligned.
+?refObj: The reference ROD object.
+?refHandle: Handle name of the reference object.
+?xAlign: Horizontal alignment rule.
+?yAlign: Vertical alignment rule.
+?xOffset: Persistent offset distance in the X direction.
+?yOffset: Persistent offset distance in the Y direction.
+@example
+rodAssignAlign(?alignObj obj1 ?alignHandle "centerCenter" ?refObj obj2 ?refHandle "centerCenter") ; Locks obj1's center to obj2's center
+@desc Establishes a persistent alignment constraint between two ROD objects that is maintained when the reference object is moved.
+
+@function rodGetObj
+@usage rodGetObj(t_name [d_cvId])
+@category Relative Object Design
+@parameters
+t_name: Unique name of the ROD object to find.
+d_cvId: Optional cellview ID (defaults to the current cellview).
+@example
+myRodObj = rodGetObj("myRect") ; Retrieves the ROD object structure named "myRect"
+@desc Finds and returns the relative object design (ROD) object structure associated with the specified name.
+
+@function rodNameObj
+@usage rodNameObj(d_dbId t_name)
+@category Relative Object Design
+@parameters
+d_dbId: Database ID of an existing standard layout shape.
+t_name: Unique name to assign to the object.
+@example
+rodNameObj(rectId "myNamedRect") ; Converts standard rectId into a ROD object named "myNamedRect"
+@desc Upgrades an existing database shape into a relative object design (ROD) object by assigning it a unique ROD name.
+
+@function rodUnNameObj
+@usage rodUnNameObj(r_rodObj)
+@category Relative Object Design
+@parameters
+r_rodObj: The ROD object structure or name to be dissociated.
+@example
+rodUnNameObj(myRodObj) ; Converts the ROD object back to a standard non-ROD shape
+@desc Dissociates the ROD properties and name from an object, returning it to a standard database shape.
+
+@function rodGetNamedShapes
+@usage rodGetNamedShapes(d_cvId)
+@category Relative Object Design
+@parameters
+d_cvId: Database ID of the cellview to query.
+@example
+allRods = rodGetNamedShapes(geGetEditCellView()) ; Gets all ROD objects in current cellview
+@desc Returns a list of all relative object design (ROD) objects/named shapes present in the specified cellview.
+
+@function rodSubNameObj
+@usage rodSubNameObj(r_rodObj t_subName)
+@category Relative Object Design
+@parameters
+r_rodObj: The parent ROD object.
+t_subName: Sub-name identifier string to assign.
+@example
+rodSubNameObj(myMultipartObj "subPin") ; Names a sub-element inside a multipart ROD object
+@desc Assigns a sub-name to a nested component or sub-shape within a complex or multipart relative object design (ROD) object.

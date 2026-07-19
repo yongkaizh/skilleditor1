@@ -1,0 +1,5 @@
+{
+  "name": "Cadence SKILL Editor",
+  "description": "An interactive IDE for Cadence SKILL scripting with linter, documentation lookup, and AI expert analysis.",
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
