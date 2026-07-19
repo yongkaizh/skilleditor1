@@ -4,29 +4,22 @@ import {
   FolderOpen,
   FileArchive,
   Copy,
-  Code2,
   Sparkles,
   Book,
   LayoutTemplate,
   GraduationCap,
-  Undo2,
-  Redo2,
-  AlignLeft,
   CheckCircle2,
   Loader2,
   Search,
-  Map as MapIcon,
   Play,
   Trophy,
-  X,
-  WrapText,
   MessageSquare,
   Cloud,
-  ChevronDown,
-  ChevronUp,
   Save,
   SaveOff,
   Bug,
+  Settings,
+  ListTree,
 } from "lucide-react";
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
@@ -35,7 +28,11 @@ import { v4 as uuidv4 } from 'uuid';
 import { EditorPane } from "./components/EditorPane";
 import { FileExplorer } from "./components/FileExplorer";
 import { EditorBreadcrumbs } from "./components/EditorBreadcrumbs";
+import { EditorTabs } from "./components/EditorTabs";
+import { SearchSidebar } from "./components/SearchSidebar";
+import { CodeOutlineSidebar } from "./components/CodeOutlineSidebar";
 import { GitHubSyncModal } from "./components/GitHubSyncModal";
+import { SettingsModal } from "./components/SettingsModal";
 import { Console, type ConsoleMessage } from "./components/Console";
 import { OnboardingTour } from "./components/OnboardingTour";
 import { Tooltip } from "./components/Tooltip";
@@ -104,7 +101,30 @@ function App() {
     { id: '1', name: 'main.il', content: DEFAULT_SKILL }
   ]);
   const [activeFileId, setActiveFileId] = useState<string>('1');
+  const [openFileIds, setOpenFileIds] = useState<string[]>(['1']);
   const [isGitHubModalOpen, setIsGitHubModalOpen] = useState(false);
+
+  const handleFileSelect = (id: string) => {
+    setActiveFileId(id);
+    setOpenFileIds(prev => prev.includes(id) ? prev : [...prev, id]);
+  };
+
+  const handleTabClose = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setOpenFileIds(prev => {
+      const newIds = prev.filter(tabId => tabId !== id);
+      if (newIds.length === 0) {
+        return prev; // keep at least one tab open, or handle empty state. For now just prevent closing last tab.
+      }
+      if (id === activeFileId) {
+        // Find previous tab index
+        const index = prev.indexOf(id);
+        const nextId = newIds[index] || newIds[index - 1] || newIds[0];
+        setActiveFileId(nextId);
+      }
+      return newIds;
+    });
+  };
 
   useEffect(() => {
     projectState.update(files);
@@ -148,23 +168,10 @@ function App() {
   
   const [documentationSearchQuery, setDocumentationSearchQuery] = useState("");
 
-  const [isFolded, setIsFolded] = useState(false);
-
-  const handleFoldToggle = () => {
-    if (editorRef.current) {
-      if (isFolded) {
-        editorRef.current.getAction('editor.unfoldAll').run();
-      } else {
-        editorRef.current.getAction('editor.foldAll').run();
-      }
-      setIsFolded(!isFolded);
-    }
-  };
-
   const handleNavigate = (fileName: string, line?: number) => {
     const file = files.find(f => f.name === fileName);
     if (file) {
-      setActiveFileId(file.id);
+      handleFileSelect(file.id);
       if (line !== undefined && editorRef.current) {
         // Delay ensures editor has loaded the new model before scrolling
         setTimeout(() => {
@@ -189,7 +196,7 @@ function App() {
   };
 
   const [isCopied, setIsCopied] = useState(false);
-  const [activeTab, setActiveTab] = useState<"files" | "tour" | "scenarios" | "challenges" | "templates" | "cheatsheet" | "documentation" | null>("files");
+  const [activeTab, setActiveTab] = useState<"files" | "search" | "tour" | "scenarios" | "challenges" | "templates" | "cheatsheet" | "documentation" | "outline" | null>("files");
 
 
   const [autoSaveEnabled, setAutoSaveEnabled] = useState<boolean>(() => {
@@ -246,6 +253,7 @@ function App() {
     setTimeout(() => setToastMessage(null), 3000);
   };
   const [isConsoleOpen, setIsConsoleOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [consoleOutput, setConsoleOutput] = useState<ConsoleMessage[]>([]);
   const [isTourOpen, setIsTourOpen] = useState(false);
 
@@ -283,7 +291,7 @@ function App() {
           const parsed = typeof saved === "string" ? JSON.parse(saved) : saved;
           if (parsed && parsed.length > 0) {
             setFiles(parsed);
-            setActiveFileId(parsed[0].id);
+            handleFileSelect(parsed[0].id);
           }
         } catch (e) {
           console.error(e);
@@ -296,7 +304,7 @@ function App() {
             const parsed = JSON.parse(localSaved);
             if (parsed && parsed.length > 0) {
               setFiles(parsed);
-              setActiveFileId(parsed[0].id);
+              handleFileSelect(parsed[0].id);
               set("ag-skill-files", parsed);
             }
           } catch (e) {
@@ -327,7 +335,7 @@ function App() {
 
     const handleFunctionJump = (fn: any) => {
     if (activeFileId !== fn.fileId) {
-      setActiveFileId(fn.fileId);
+      handleFileSelect(fn.fileId);
     }
     setTimeout(() => {
       if (editorRef.current) {
@@ -338,32 +346,94 @@ function App() {
     }, 50);
   };
 
+  const handleSearchResultClick = (fileId: string, line: number) => {
+    handleFileSelect(fileId);
+    setTimeout(() => {
+      if (editorRef.current) {
+        editorRef.current.revealLineInCenter(line);
+        editorRef.current.setPosition({ lineNumber: line, column: 1 });
+        editorRef.current.focus();
+      }
+    }, 50);
+  };
+
   const handleEditorMount = (editor: any, monaco: any) => {
     editorRef.current = editor;
     monacoRef.current = monaco;
+
+    editor.addAction({
+      id: 'format-skill-code',
+      label: 'Format SKILL Code',
+      keybindings: [
+        monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.KeyF,
+      ],
+      run: (ed: any) => {
+        const model = ed.getModel();
+        if (!model) return;
+        const currentContent = model.getValue();
+        
+        const lines = currentContent.split("\n");
+        const formatted = [];
+        let indentLevel = 0;
+
+        for (let i = 0; i < lines.length; i++) {
+          let line = lines[i].trim();
+          if (!line) {
+            formatted.push("");
+            continue;
+          }
+
+          let startClosing = 0;
+          for (let j = 0; j < line.length; j++) {
+            if (line[j] === ")" || line[j] === "}") {
+              startClosing++;
+            } else if (line[j] !== " " && line[j] !== "\t") {
+              break;
+            }
+          }
+
+          let currentIndent = Math.max(0, indentLevel - startClosing);
+          formatted.push(" ".repeat(currentIndent * 4) + line);
+
+          let cleanLine = line
+            .replace(/"(?:[^"\\]|\\.)*"/g, "")
+            .replace(/;.*$/, "");
+          let openParen = (cleanLine.match(/[({]/g) || []).length;
+          let closeParen = (cleanLine.match(/[)}]/g) || []).length;
+
+          indentLevel += openParen - closeParen;
+          if (indentLevel < 0) indentLevel = 0;
+        }
+
+        const newContent = formatted.join("\n");
+        
+        ed.pushUndoStop();
+        ed.executeEdits("format", [
+          {
+            range: model.getFullModelRange(),
+            text: newContent,
+          },
+        ]);
+        ed.pushUndoStop();
+      }
+    });
   };
 
   const handleInsertSnippet = (text: string) => {
     if (editorRef.current && monacoRef.current) {
-      const snippetController =
-        editorRef.current.getContribution("snippetController2");
-      if (snippetController) {
-        snippetController.insert(text);
-      } else {
-        const position = editorRef.current.getPosition();
-        editorRef.current.executeEdits("cheatsheet", [
-          {
-            range: new monacoRef.current.Range(
-              position.lineNumber,
-              position.column,
-              position.lineNumber,
-              position.column,
-            ),
-            text: text,
-            forceMoveMarkers: true,
-          },
-        ]);
-      }
+      const position = editorRef.current.getPosition();
+      editorRef.current.executeEdits("cheatsheet", [
+        {
+          range: new monacoRef.current.Range(
+            position.lineNumber,
+            position.column,
+            position.lineNumber,
+            position.column
+          ),
+          text: text,
+          forceMoveMarkers: true,
+        },
+      ]);
       editorRef.current.focus();
     } else {
       setContent((prev) => prev + "\n" + text);
@@ -371,6 +441,12 @@ function App() {
   };
 
   const handleSelectTemplate = (text: string) => {
+    const currentFile = files.find(f => f.id === activeFileId);
+    if (currentFile && currentFile.content.trim() === "") {
+      setContent(text);
+      return;
+    }
+
     let newNum = files.length + 1;
     let name = `template${newNum}.il`;
     while (files.some(f => f.name === name)) {
@@ -379,19 +455,19 @@ function App() {
     }
     const newFile = { id: uuidv4(), name, content: text };
     setFiles(prev => [...prev, newFile]);
-    setActiveFileId(newFile.id);
+    handleFileSelect(newFile.id);
   };
 
   const handleSelectChallenge = (challenge: any, isSolution?: boolean) => {
     let name = `${challenge.id}${isSolution ? '-sol' : ''}.il`;
     let existing = files.find(f => f.name === name);
     if (existing) {
-      setActiveFileId(existing.id);
+      handleFileSelect(existing.id);
     } else {
       const code = isSolution ? challenge.solutionCode : challenge.initialCode;
       const newFile = { id: uuidv4(), name, content: code || "" };
       setFiles(prev => [...prev, newFile]);
-      setActiveFileId(newFile.id);
+      handleFileSelect(newFile.id);
     }
     showToast(`Challenge "${challenge.title}" ${isSolution ? 'Solution' : ''} initialized!`);
   };
@@ -414,34 +490,6 @@ function App() {
     navigator.clipboard.writeText(content);
     setIsCopied(true);
     setTimeout(() => setIsCopied(false), 2000);
-  };
-
-  const handleUndo = () => {
-    if (editorRef.current) {
-      editorRef.current.trigger("keyboard", "undo", null);
-      editorRef.current.focus();
-    }
-  };
-
-  const handleRedo = () => {
-    if (editorRef.current) {
-      editorRef.current.trigger("keyboard", "redo", null);
-      editorRef.current.focus();
-    }
-  };
-
-  const handleSearch = () => {
-    if (editorRef.current) {
-      editorRef.current.getAction("actions.find").run();
-      editorRef.current.focus();
-    }
-  };
-
-  const handleToggleComment = () => {
-    if (editorRef.current) {
-      editorRef.current.getAction("editor.action.commentLine").run();
-      editorRef.current.focus();
-    }
   };
 
   const handleRun = async (debugMode = false) => {
@@ -688,58 +736,6 @@ function App() {
     }
   };
 
-  const handleFormatCode = () => {
-    if (!content) return;
-
-    const lines = content.split("\n");
-    const formatted = [];
-    let indentLevel = 0;
-
-    for (let i = 0; i < lines.length; i++) {
-      let line = lines[i].trim();
-      if (!line) {
-        formatted.push("");
-        continue;
-      }
-
-      let startClosing = 0;
-      for (let j = 0; j < line.length; j++) {
-        if (line[j] === ")" || line[j] === "}") {
-          startClosing++;
-        } else if (line[j] !== " " && line[j] !== "\t") {
-          break;
-        }
-      }
-
-      let currentIndent = Math.max(0, indentLevel - startClosing);
-      formatted.push(" ".repeat(currentIndent * 4) + line);
-
-      let cleanLine = line
-        .replace(/"(?:[^"\\]|\\.)*"/g, "")
-        .replace(/;.*$/, "");
-      let openParen = (cleanLine.match(/[({]/g) || []).length;
-      let closeParen = (cleanLine.match(/[)}]/g) || []).length;
-
-      indentLevel += openParen - closeParen;
-      if (indentLevel < 0) indentLevel = 0;
-    }
-
-    const newContent = formatted.join("\n");
-
-    if (editorRef.current) {
-      editorRef.current.pushUndoStop();
-      editorRef.current.executeEdits("format", [
-        {
-          range: editorRef.current.getModel().getFullModelRange(),
-          text: newContent,
-        },
-      ]);
-      editorRef.current.pushUndoStop();
-    } else {
-      setContent(newContent);
-    }
-  };
-  
   const handleRefactorCode = () => {
     if (!content) return;
     const newContent = refactorSkillCode(content);
@@ -801,6 +797,29 @@ function App() {
               >
                 <FolderOpen size={16} /> <span className="hidden lg:inline">Explorer</span>
                 {activeTab === "files" && (
+                  <motion.div layoutId="activeTabWedge" className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 w-6 h-[3px] bg-indigo-500 rounded-t-full" />
+                )}
+              </button>
+            </Tooltip>
+            
+            <Tooltip content="Search project" position="bottom" delay={0.5} disabled={activeTab === "search"}>
+              <button
+                className={`relative inline-flex items-center gap-2 px-2.5 py-2 rounded-lg text-sm font-medium cursor-pointer transition-all ${activeTab === "search" ? 'bg-indigo-500/10 text-indigo-400' : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'}`}
+                onClick={() => setActiveTab(activeTab === "search" ? null : "search")}
+              >
+                <Search size={16} /> <span className="hidden lg:inline">Search</span>
+                {activeTab === "search" && (
+                  <motion.div layoutId="activeTabWedge" className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 w-6 h-[3px] bg-indigo-500 rounded-t-full" />
+                )}
+              </button>
+            </Tooltip>
+            <Tooltip content="Code Outline" position="bottom" delay={0.5} disabled={activeTab === "outline"}>
+              <button
+                className={`relative inline-flex items-center gap-2 px-2.5 py-2 rounded-lg text-sm font-medium cursor-pointer transition-all ${activeTab === "outline" ? 'bg-indigo-500/10 text-indigo-400' : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'}`}
+                onClick={() => setActiveTab(activeTab === "outline" ? null : "outline")}
+              >
+                <ListTree size={16} /> <span className="hidden lg:inline">Outline</span>
+                {activeTab === "outline" && (
                   <motion.div layoutId="activeTabWedge" className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 w-6 h-[3px] bg-indigo-500 rounded-t-full" />
                 )}
               </button>
@@ -883,6 +902,13 @@ function App() {
 
           <div className="w-[1px] h-5 bg-white/10 mx-1 hidden sm:block" />
 
+                    <button 
+            onClick={() => setIsSettingsOpen(true)}
+            className="flex items-center gap-2 text-slate-300 hover:text-white hover:bg-white/5 px-2.5 py-1.5 rounded-lg text-sm font-medium transition-colors"
+          >
+            <Settings size={16} className="text-slate-400" />
+            <span className="hidden md:inline">Settings</span>
+          </button>
           <button 
             onClick={handleDownload}
             className="flex items-center gap-2 text-slate-300 hover:text-white hover:bg-white/5 px-2.5 py-1.5 rounded-lg text-sm font-medium transition-colors"
@@ -905,10 +931,7 @@ function App() {
           {activeTab && (
             <motion.aside
               initial={{ width: 0, opacity: 0 }}
-              animate={{ 
-                width: "min(400px, 100vw)", 
-                opacity: 1,
-              }}
+              animate={{ width: "min(400px, 100vw)", opacity: 1 }}
               exit={{ width: 0, opacity: 0 }}
               transition={{ type: "spring", bounce: 0, duration: 0.3 }}
               className="absolute md:relative z-30 h-full bg-[#0b0c10] flex flex-col shrink-0 shadow-2xl md:shadow-none overflow-hidden border-r border-white/[0.04]"
@@ -919,54 +942,29 @@ function App() {
                     <FileExplorer 
                       files={files} 
                       activeFileId={activeFileId} 
-                      onFileSelect={setActiveFileId} 
+                      onFileSelect={handleFileSelect} 
                       onFilesChange={setFiles} 
                     />
                     <FunctionNavigator onFunctionClick={handleFunctionJump} />
                   </div>
                 )}
+                {activeTab === "search" && (
+                  <SearchSidebar files={files} onResultClick={handleSearchResultClick} onClose={() => setActiveTab(null)} />
+                )}
+                {activeTab === "outline" && (
+                  <CodeOutlineSidebar content={content} onNavigate={(line) => handleNavigate(activeFile.name, line)} onClose={() => setActiveTab(null)} />
+                )}
                 {activeTab === "tour" && (
-                  <TutorialSidebar
-                    isActive={true}
-                    isInline={true}
-                    currentText={content}
-                    onClose={() => setActiveTab(null)}
-                    onInsertCode={(code) => {
-                      setContent(code);
-                      if (editorRef.current) {
-                        editorRef.current.setValue(code);
-                      }
-                      showToast("Loaded lesson blueprint into editor!");
-                    }}
-                  />
+                  <TutorialSidebar isActive={true} isInline={true} currentText={content} onClose={() => setActiveTab(null)} onInsertCode={(code) => { setContent(code); if (editorRef.current) editorRef.current.setValue(code); showToast("Loaded lesson blueprint into editor!"); }} />
                 )}
                 {activeTab === "templates" && (
-                  <TemplateGallery
-                    isOpen={true}
-                    isInline={true}
-                    onClose={() => setActiveTab(null)}
-                    onSelect={handleSelectTemplate}
-                  />
+                  <TemplateGallery isOpen={true} isInline={true} onClose={() => setActiveTab(null)} onSelect={handleSelectTemplate} onInsert={handleInsertSnippet} />
                 )}
                 {activeTab === "cheatsheet" && (
-                  <CheatsheetDrawer
-                    isOpen={true}
-                    isInline={true}
-                    onClose={() => setActiveTab(null)}
-                    onInsert={handleInsertSnippet}
-                    manualFns={manualFns}
-                  />
+                  <CheatsheetDrawer isOpen={true} isInline={true} onClose={() => setActiveTab(null)} onInsert={handleInsertSnippet} manualFns={manualFns} />
                 )}
                 {activeTab === "documentation" && (
-                  <DocumentationPortal 
-                    isOpen={true} 
-                    isInline={true} 
-                    onClose={() => setActiveTab(null)} 
-                    manualFns={manualFns}
-                    onInsert={handleInsertSnippet}
-                    searchQuery={documentationSearchQuery}
-                    setSearchQuery={setDocumentationSearchQuery}
-                  />
+                  <DocumentationPortal isOpen={true} isInline={true} onClose={() => setActiveTab(null)} manualFns={manualFns} onInsert={handleInsertSnippet} searchQuery={documentationSearchQuery} setSearchQuery={setDocumentationSearchQuery} />
                 )}
                 {activeTab === "challenges" && (
                   <ChallengeHub onClose={() => setActiveTab(null)} onSelectChallenge={(c, isSol) => { handleSelectChallenge(c, isSol); setActiveTab(null); }} />
@@ -978,82 +976,35 @@ function App() {
         
         <div className="flex-1 flex flex-col min-w-0">
           <section className="flex-1 flex flex-col overflow-hidden bg-[#12141a]">
-          <div className="px-6 py-3 text-xs font-semibold text-[#94a3b8] uppercase tracking-wider bg-[#0b0c10] border-b border-white/[0.04] flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <EditorBreadcrumbs activeFile={activeFile} files={files} onFileSelect={setActiveFileId} />
-              {saveStatus === "saving" && (
-                <span className="flex items-center gap-1.5 text-indigo-400 normal-case tracking-normal font-medium text-[11px]">
-                  <Loader2 size={12} className="animate-spin" /> saving...
-                </span>
-              )}
-              {saveStatus === "saved" && (
-                <span className="flex items-center gap-1.5 text-emerald-400 normal-case tracking-normal font-medium text-[11px]">
-                  <CheckCircle2 size={12} /> saved
-                </span>
-              )}
+            <EditorTabs files={files} openFileIds={openFileIds} activeFileId={activeFileId} onTabSelect={handleFileSelect} onTabClose={handleTabClose} />
+            <div className="px-6 py-3 text-xs font-semibold text-[#94a3b8] uppercase tracking-wider bg-[#0b0c10] border-b border-white/[0.04] flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <EditorBreadcrumbs activeFile={activeFile} files={files} onFileSelect={handleFileSelect} />
+              </div>
+              <div className="flex items-center gap-2">
+                <button onClick={() => setIsConsoleOpen(!isConsoleOpen)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold tracking-wider uppercase transition-all ${isConsoleOpen ? 'bg-indigo-500/20 text-indigo-300' : 'bg-white/5 hover:bg-white/10 text-[#94a3b8] hover:text-white'}`}>
+                  <MessageSquare size={14} />
+                  <span className="hidden sm:inline">Console</span>
+                </button>
+                <button onClick={() => handleRun(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 hover:text-emerald-300 border border-emerald-500/20 transition-all text-[11px] font-bold tracking-wider uppercase">
+                  <Bug size={14} />
+                  <span className="hidden sm:inline">Debug</span>
+                </button>
+                <button id="run-skill-btn" onClick={() => handleRun(false)} disabled={isSimulating} className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg transition-all text-[11px] font-bold tracking-wider uppercase shadow-lg ${isSimulating ? 'bg-indigo-500/50 text-white/50 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-500/20 hover:shadow-indigo-500/40'}`}>
+                  {isSimulating ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />}
+                  <span className="hidden sm:inline">{isSimulating ? "Running..." : "Run SKILL"}</span>
+                </button>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setIsConsoleOpen(!isConsoleOpen)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold tracking-wider uppercase transition-all ${isConsoleOpen ? 'bg-indigo-500/20 text-indigo-300' : 'bg-white/5 hover:bg-white/10 text-[#94a3b8] hover:text-white'}`}
-              >
-                <MessageSquare size={14} />
-                <span className="hidden sm:inline">Console</span>
-              </button>
-              <div className="w-px h-4 bg-white/10 mx-1" />
-              <button
-                onClick={handleFoldToggle}
-                title={isFolded ? "Unfold All" : "Fold Procedures & Loops"}
-                className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-[#94a3b8] hover:text-white transition-all"
-              >
-                {isFolded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-              </button>
-              <div className="w-px h-4 bg-white/10 mx-1 hidden sm:block" />
-              <button
-                onClick={() => handleRun(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 hover:text-emerald-300 border border-emerald-500/20 transition-all text-[11px] font-bold tracking-wider uppercase"
-              >
-                <Bug size={14} />
-                <span className="hidden sm:inline">Debug</span>
-              </button>
-              <button
-                id="run-skill-btn"
-                onClick={() => handleRun(false)}
-                disabled={isSimulating}
-                className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg transition-all text-[11px] font-bold tracking-wider uppercase shadow-lg ${isSimulating ? 'bg-indigo-500/50 text-white/50 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-500/20 hover:shadow-indigo-500/40'}`}
-              >
-                {isSimulating ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />}
-                <span className="hidden sm:inline">{isSimulating ? "Running..." : "Run SKILL"}</span>
-              </button>
+            <div className="flex-1 overflow-y-auto relative">
+              <EditorPane activeFileName={activeFile.name} value={content} onChange={handleEditorChange} onMount={handleEditorMount} showMinimap={showMinimap} wordWrap={wordWrap} fontSize={fontSize} manualFns={manualFns} breakpoints={Array.from(breakpoints.get(activeFile.name) || [])} onBreakpointToggle={handleBreakpointToggle} onNavigate={handleNavigate} />
             </div>
-          </div>
-          <div className="flex-1 overflow-y-auto relative">
-            <EditorPane
-              activeFileName={activeFile.name}
-              value={content}
-              onChange={handleEditorChange}
-              onMount={handleEditorMount}
-              showMinimap={showMinimap}
-              wordWrap={wordWrap}
-              fontSize={fontSize}
-              manualFns={manualFns}
-              breakpoints={Array.from(breakpoints.get(activeFile.name) || [])}
-              onBreakpointToggle={handleBreakpointToggle}
-              onNavigate={handleNavigate}
-            />
-          </div>
-        </section>
+          </section>
+
           {isConsoleOpen && (
-            <Console 
-              messages={consoleOutput}
-              onClear={() => setConsoleOutput([])}
-              onClose={() => setIsConsoleOpen(false)}
-              onApplyQuickFix={handleApplyQuickFix}
-              onCommand={handleConsoleCommand}
-              onExpertAnalyze={handleExpertAnalyze}
-              onRefactor={handleRefactorCode}
-              isSimulating={isSimulating}
-            />
+            <div className="h-64 flex flex-col min-w-0 border-t border-white/[0.04]">
+              <Console messages={consoleOutput} onClear={() => setConsoleOutput([])} onClose={() => setIsConsoleOpen(false)} onApplyQuickFix={handleApplyQuickFix} onCommand={handleConsoleCommand} onExpertAnalyze={handleExpertAnalyze} onRefactor={handleRefactorCode} isSimulating={isSimulating} />
+            </div>
           )}
         </div>
       </main>
@@ -1097,6 +1048,17 @@ function App() {
         />
       </AnimatePresence>
 
+      
+      <SettingsModal 
+        isOpen={isSettingsOpen} 
+        onClose={() => setIsSettingsOpen(false)} 
+        wordWrap={wordWrap} 
+        setWordWrap={setWordWrap} 
+        showMinimap={showMinimap} 
+        setShowMinimap={setShowMinimap} 
+        fontSize={fontSize} 
+        setFontSize={setFontSize} 
+      />
       <GitHubSyncModal
         isOpen={isGitHubModalOpen}
         onClose={() => setIsGitHubModalOpen(false)}

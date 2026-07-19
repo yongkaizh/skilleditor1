@@ -7,7 +7,7 @@ export interface EvaluationResult {
 class ReturnException extends Error {
     value: any;
     constructor(value: any) {
-        super("Return");
+        super("*Error* eval: return outside of prog/procedure");
         this.value = value;
     }
 }
@@ -24,6 +24,7 @@ class Environment {
         return undefined;
     }
     set(name: string, value: any) {
+        // eslint-disable-next-line @typescript-eslint/no-this-alias
         let env: Environment | undefined = this;
         while (env) {
             if (env.vars.has(name)) {
@@ -68,23 +69,58 @@ class SkillInterpreter {
   }
 
   private initBuiltins() {
-    this.globalEnv.define('+', (...args: any[]) => args.reduce((a, b) => a + b, 0));
-    this.globalEnv.define('-', (...args: any[]) => args.length === 1 ? -args[0] : args[0] - args[1]);
-    this.globalEnv.define('*', (...args: any[]) => args.reduce((a, b) => a * b, 1));
-    this.globalEnv.define('/', (a: number, b: number) => a / b);
+    this.globalEnv.define('+', (...args: any[]) => {
+      if (args.some(a => typeof a !== 'number')) throw new Error(`*Error* plus: not a number`);
+      return args.reduce((a, b) => a + b, 0);
+    });
+    this.globalEnv.define('-', (...args: any[]) => {
+      if (args.length === 0) return 0;
+      if (args.some(a => typeof a !== 'number')) throw new Error(`*Error* difference: not a number`);
+      return args.length === 1 ? -args[0] : args[0] - args[1];
+    });
+    this.globalEnv.define('*', (...args: any[]) => {
+      if (args.some(a => typeof a !== 'number')) throw new Error(`*Error* times: not a number`);
+      return args.reduce((a, b) => a * b, 1);
+    });
+    this.globalEnv.define('/', (a: any, b: any) => {
+      if (typeof a !== 'number' || typeof b !== 'number') throw new Error(`*Error* quotient: not a number`);
+      if (b === 0) throw new Error(`*Error* quotient: division by zero`);
+      return a / b;
+    });
     this.globalEnv.define('<', (a: any, b: any) => a < b);
     this.globalEnv.define('>', (a: any, b: any) => a > b);
     this.globalEnv.define('<=', (a: any, b: any) => a <= b);
     this.globalEnv.define('>=', (a: any, b: any) => a >= b);
     this.globalEnv.define('==', (a: any, b: any) => a === b);
     this.globalEnv.define('!=', (a: any, b: any) => a !== b);
-    this.globalEnv.define('makeTable', (name?: string, defVal?: any) => { return {}; });
+    this.globalEnv.define('makeTable', (_name?: string, _defVal?: any) => { return {}; });
     this.globalEnv.define('list', (...args: any[]) => args);
-    this.globalEnv.define('car', (list: any[]) => list?.[0]);
-    this.globalEnv.define('cdr', (list: any[]) => list?.slice(1));
-    this.globalEnv.define('nth', (n: number, list: any[]) => list?.[n]);
-    this.globalEnv.define('length', (list: any[]) => list?.length || 0);
-    this.globalEnv.define('append', (l1: any[], l2: any[]) => (l1||[]).concat(l2||[]));
+    this.globalEnv.define('car', (list: any[]) => {
+      if (list === null || list === undefined || list === 'nil') return null;
+      if (!Array.isArray(list)) throw new Error("*Error* car: argument must be a list");
+      return list[0];
+    });
+    this.globalEnv.define('cdr', (list: any[]) => {
+      if (list === null || list === undefined || list === 'nil') return null;
+      if (!Array.isArray(list)) throw new Error("*Error* cdr: argument must be a list");
+      return list.slice(1);
+    });
+    this.globalEnv.define('nth', (n: number, list: any[]) => {
+      if (list === null || list === undefined || list === 'nil') return null;
+      if (typeof n !== 'number') throw new Error("*Error* nth: first argument must be a number");
+      if (!Array.isArray(list)) throw new Error("*Error* nth: second argument must be a list");
+      return list[n];
+    });
+    this.globalEnv.define('length', (list: any[]) => {
+      if (list === null || list === undefined || list === 'nil') return 0;
+      if (!Array.isArray(list)) throw new Error("*Error* length: argument must be a list");
+      return list.length;
+    });
+    this.globalEnv.define('append', (l1: any[], l2: any[]) => {
+      if (l1 !== null && l1 !== 'nil' && !Array.isArray(l1)) throw new Error("*Error* append: first argument must be a list");
+      if (l2 !== null && l2 !== 'nil' && !Array.isArray(l2)) throw new Error("*Error* append: second argument must be a list");
+      return (l1 && l1 !== 'nil' ? l1 : []).concat(l2 && l2 !== 'nil' ? l2 : []);
+    });
     
     this.globalEnv.define('println', (...args: any[]) => {
       const val = args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ');
@@ -94,7 +130,7 @@ class SkillInterpreter {
     this.globalEnv.define('printf', (format: string, ...args: any[]) => {
       let str = format || "";
       let argIndex = 0;
-      str = str.replace(/%[-+0-9\.]*[sfdgc]/g, (match) => {
+      str = str.replace(/%[-+0-9.]*[sfdgc]/g, (match) => {
           if (argIndex < args.length) {
              return String(args[argIndex++]);
           }
@@ -150,18 +186,24 @@ class SkillInterpreter {
     }
   }
 
-  private tokenize(code: string) {
+  public tokenize(code: string) {
     let tokens: any[] = [];
     let i = 0;
     let line = 1;
+    let spaceBefore = false;
     while (i < code.length) {
         let char = code[i];
-        if (char === '\n') { line++; i++; continue; }
-        if (char === ' ' || char === '\t' || char === '\r' || char === ',') { i++; continue; }
+        if (char === '\n') { line++; i++; spaceBefore = true; continue; }
+        if (char === ' ' || char === '\t' || char === '\r' || char === ',') { i++; spaceBefore = true; continue; }
         if (char === ';') {
             while (i < code.length && code[i] !== '\n') i++;
+            spaceBefore = true;
             continue;
         }
+
+        let currSpaceBefore = spaceBefore;
+        spaceBefore = false;
+
         if (char === '"') {
             let str = '"';
             i++;
@@ -171,11 +213,11 @@ class SkillInterpreter {
                 if (code[i] === '\n') line++;
                 i++;
             }
-            tokens.push({val: str, line});
+            tokens.push({val: str, line, spaceBefore: currSpaceBefore});
             continue;
         }
         if (char === '(' || char === ')' || char === '\'' || char === '[' || char === ']') {
-            tokens.push({val: char, line});
+            tokens.push({val: char, line, spaceBefore: currSpaceBefore});
             i++;
             continue;
         }
@@ -188,9 +230,9 @@ class SkillInterpreter {
                     i++;
                 }
                 if (word === "-") {
-                    tokens.push({val: "-", line});
+                    tokens.push({val: "-", line, spaceBefore: currSpaceBefore});
                 } else {
-                    tokens.push({val: word, line});
+                    tokens.push({val: word, line, spaceBefore: currSpaceBefore});
                 }
                 continue;
             }
@@ -202,7 +244,7 @@ class SkillInterpreter {
             } else {
                 i++;
             }
-            tokens.push({val: op, line});
+            tokens.push({val: op, line, spaceBefore: currSpaceBefore});
             continue;
         }
         let word = "";
@@ -211,7 +253,7 @@ class SkillInterpreter {
             i++;
         }
         if (word) {
-            tokens.push({val: word, line});
+            tokens.push({val: word, line, spaceBefore: currSpaceBefore});
         }
     }
     return tokens;
@@ -275,7 +317,7 @@ class SkillInterpreter {
       return res;
   }
 
-  private parse(tokens: any[]): ASTNode[] {
+  public parse(tokens: any[]): ASTNode[] {
       let i = 0;
       const parseExpr = (): ASTNode | null => {
           if (i >= tokens.length) return null;
@@ -297,7 +339,7 @@ class SkillInterpreter {
               e = { type: 'list', elements: this.processInfix(list), line: t.line };
           } else {
               i++;
-              if (i < tokens.length && tokens[i].val === '(') {
+              if (i < tokens.length && tokens[i].val === '(' && !tokens[i].spaceBefore) {
                  i++;
                  let list: ASTNode[] = [];
                  while (i < tokens.length && tokens[i].val !== ')') {
@@ -370,10 +412,17 @@ class SkillInterpreter {
                       return -parseFloat(numStr);
                   }
                   let val = env.get(numStr);
-                  return typeof val === 'number' ? -val : `*unbound_${expr.name}*`;
+                  if (val === undefined) throw new Error(`*Error* eval: unbound variable - ${numStr}`);
+                  if (typeof val !== 'number') throw new Error(`*Error* eval: not a number - ${numStr}`);
+                  return -val;
               }
               let envVal = env.get(expr.name);
-              return envVal !== undefined ? envVal : `*unbound_${expr.name}*`;
+              if (envVal === undefined) {
+                  if (expr.name === 't') return true;
+                  if (expr.name === 'nil') return false;
+                  throw new Error(`*Error* eval: unbound variable - ${expr.name}`);
+              }
+              return envVal;
           case 'quote':
               return this.evaluateQuote(expr.value);
           case 'list':
@@ -402,6 +451,8 @@ class SkillInterpreter {
           let sig = args[0];
           let procName = "";
           let procArgs: string[] = [];
+          let body = args.slice(1);
+          
           if (sig.type === 'call') {
               procName = sig.fn;
               procArgs = sig.args.map((a: any) => a.name || a.val);
@@ -409,8 +460,14 @@ class SkillInterpreter {
               let fst = sig.elements[0];
               if (fst.type === 'symbol') procName = fst.name;
               procArgs = sig.elements.slice(1).map((a: any) => a.name || a.val);
+          } else if (sig.type === 'symbol') {
+              procName = sig.name;
+              if (args[1] && args[1].type === 'list') {
+                  procArgs = args[1].elements.map((a: any) => a.name || a.val);
+                  body = args.slice(2);
+              }
           }
-          let body = args.slice(1);
+          
           let globalEnv = env;
           while(globalEnv.parent) globalEnv = globalEnv.parent;
           globalEnv.define(procName, { type: 'procedure', args: procArgs, body: body });
@@ -549,21 +606,21 @@ class SkillInterpreter {
       }
 
       if (fnName === 'for') {
-          if (args.length < 3) return null;
-          let varName = args[0].type === 'symbol' ? args[0].name : '';
+          if (args.length < 3) throw new Error("*Error* eval: too few arguments - for");
+          if (args[0].type !== 'symbol') throw new Error("*Error* for: first argument must be a symbol");
+          let varName = args[0].name;
           let start = await this.evaluateExpr(args[1], env);
           let end = await this.evaluateExpr(args[2], env);
           let lastVal = null;
-          if (typeof start === 'number' && typeof end === 'number') {
-              for (let i = start; i <= end; i++) {
-                  let newEnv = new Environment(env);
-                  newEnv.define(varName, i);
-                  try {
-                      lastVal = await this.evaluateBlock(args.slice(3), newEnv);
-                  } catch (err) {
-                      if (err instanceof ReturnException) throw err;
-                      throw err;
-                  }
+          if (typeof start !== 'number' || typeof end !== 'number') throw new Error("*Error* for: limits must be numbers");
+          for (let i = start; i <= end; i++) {
+              let newEnv = new Environment(env);
+              newEnv.define(varName, i);
+              try {
+                  lastVal = await this.evaluateBlock(args.slice(3), newEnv);
+              } catch (err) {
+                  if (err instanceof ReturnException) throw err;
+                  throw err;
               }
           }
           return lastVal;
@@ -571,7 +628,8 @@ class SkillInterpreter {
 
       if (fnName === 'cond') {
           for (let clause of args) {
-              if (clause.type === 'list' && clause.elements.length > 0) {
+              if (clause.type !== 'list') throw new Error("*Error* cond: clause must be a list");
+              if (clause.elements.length > 0) {
                   let condExpr = clause.elements[0];
                   let condVal = await this.evaluateExpr(condExpr, env);
                   if (condVal && condVal !== 'nil' && condVal !== '*unbound_nil*') {
@@ -583,11 +641,12 @@ class SkillInterpreter {
       }
 
       if (fnName === 'case') {
-          if (args.length < 1) return null;
+          if (args.length < 1) throw new Error("*Error* eval: too few arguments - case");
           let caseVal = await this.evaluateExpr(args[0], env);
           for (let i = 1; i < args.length; i++) {
               let clause = args[i];
-              if (clause.type === 'list' && clause.elements.length > 0) {
+              if (clause.type !== 'list') throw new Error("*Error* case: clause must be a list");
+              if (clause.elements.length > 0) {
                   let testExpr = clause.elements[0];
                   let matches = false;
                   if (testExpr.type === 'symbol' && testExpr.name === 't') {
@@ -613,10 +672,12 @@ class SkillInterpreter {
       }
 
       if (fnName === 'foreach') {
-          if (args.length < 2) return null;
-          let varName = args[0].type === 'symbol' ? args[0].name : '';
+          if (args.length < 2) throw new Error("*Error* eval: too few arguments - foreach");
+          if (args[0].type !== 'symbol') throw new Error("*Error* foreach: first argument must be a symbol");
+          let varName = args[0].name;
           let lst = await this.evaluateExpr(args[1], env);
           let lastVal = null;
+          if (lst !== null && lst !== 'nil' && !Array.isArray(lst)) throw new Error("*Error* foreach: second argument must be a list");
           if (Array.isArray(lst)) {
               for (let item of lst) {
                   let newEnv = new Environment(env);
@@ -671,7 +732,7 @@ class SkillInterpreter {
           return fn(...evalArgs);
       }
 
-      return `*mock_func_${fnName}*`;
+      throw new Error(`*Error* eval: undefined function - ${fnName}`);
   }
 }
 

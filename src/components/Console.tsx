@@ -111,14 +111,34 @@ export const Console: React.FC<ConsoleProps> = ({
   };
 
   const highlightConsoleLine = (text: string) => {
-    const parts = text.split(/(\*?error\*?|\*?success\*?|\*?warning\*?)/i);
-    return parts.map((part, i) => {
-      const lower = part.toLowerCase();
-      if (lower.includes("error")) return <span key={i} className="text-red-400 font-bold">{part}</span>;
-      if (lower.includes("success")) return <span key={i} className="text-emerald-400 font-bold">{part}</span>;
-      if (lower.includes("warning")) return <span key={i} className="text-amber-400 font-bold">{part}</span>;
-      return <span key={i}>{part}</span>;
-    });
+    // A quick manual highlighting
+    const highlightWords = (str: string) => {
+      // Return JSX elements inside a fragment
+      
+      // We can use a simpler approach: split by regex that captures strings, keywords, numbers, brackets
+      const tokenRegex = /(".*?"|;.*$|\b(?:if|let|prog|defun|printf|setq|list|car|cdr|cond|t|nil|for|foreach)\b|\b\d+\b|[()[\]{}]|\*?error\*?|\*?success\*?|\*?warning\*?)/gi;
+      
+      const parts = str.split(tokenRegex);
+      
+      return parts.map((part, i) => {
+        if (!part) return null;
+        const lower = part.toLowerCase();
+        
+        if (lower.includes("error")) return <span key={i} className="text-red-400 font-bold">{part}</span>;
+        if (lower.includes("success")) return <span key={i} className="text-emerald-400 font-bold">{part}</span>;
+        if (lower.includes("warning")) return <span key={i} className="text-amber-400 font-bold">{part}</span>;
+        
+        if (part.startsWith('"')) return <span key={i} className="text-emerald-300">{part}</span>;
+        if (part.startsWith(';')) return <span key={i} className="text-slate-500 italic">{part}</span>;
+        if (['(', ')', '[', ']', '{', '}'].includes(part)) return <span key={i} className="text-indigo-400 font-bold">{part}</span>;
+        if (/^\d+$/.test(part)) return <span key={i} className="text-amber-300">{part}</span>;
+        if (/^(if|let|prog|defun|printf|setq|list|car|cdr|cond|t|nil|for|foreach)$/i.test(part)) return <span key={i} className="text-fuchsia-400 font-medium">{part}</span>;
+        
+        return <span key={i} className="text-slate-300">{part}</span>;
+      });
+    };
+
+    return highlightWords(text);
   };
 
   const getIcon = (type: ConsoleMessageType) => {

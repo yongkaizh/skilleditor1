@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   Play, 
   StepForward, 
@@ -7,7 +7,10 @@ import {
   ChevronRight,
   Database,
   Hash,
-  Type
+  Type,
+  Eye,
+  Plus,
+  X
 } from 'lucide-react';
 import { motion } from 'motion/react';
 
@@ -32,7 +35,22 @@ export const Debugger: React.FC<DebuggerProps> = ({
   onStep,
   onStop
 }) => {
+  const [watchVars, setWatchVars] = useState<string[]>([]);
+  const [newWatch, setNewWatch] = useState("");
+
   if (!isOpen) return null;
+
+  const handleAddWatch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newWatch.trim() && !watchVars.includes(newWatch.trim())) {
+      setWatchVars(prev => [...prev, newWatch.trim()]);
+    }
+    setNewWatch("");
+  };
+
+  const removeWatch = (name: string) => {
+    setWatchVars(prev => prev.filter(v => v !== name));
+  };
 
   return (
     <motion.div 
@@ -86,41 +104,104 @@ export const Debugger: React.FC<DebuggerProps> = ({
         </div>
       )}
 
-      <div className="flex-1 overflow-y-auto">
-        <div className="px-4 py-2 flex items-center gap-2 text-slate-500 border-b border-white/[0.03]">
-          <Database size={12} />
-          <span className="text-[10px] font-bold uppercase tracking-widest">Variables</span>
+      <div className="flex-1 overflow-y-auto flex flex-col">
+        {/* Watch Variables Section */}
+        <div className="flex flex-col border-b border-white/[0.03]">
+          <div className="px-4 py-2 flex items-center gap-2 text-slate-500 border-b border-white/[0.03] bg-white/[0.01]">
+            <Eye size={12} />
+            <span className="text-[10px] font-bold uppercase tracking-widest">Watch</span>
+          </div>
+          <div className="p-2 space-y-1">
+            {watchVars.map(name => {
+              const val = variables[name];
+              const isDefined = val !== undefined;
+              return (
+                <div 
+                  key={name}
+                  className="group flex flex-col gap-0.5 p-2 rounded hover:bg-white/[0.02] transition-colors border border-transparent hover:border-white/5 relative"
+                >
+                  <button 
+                    onClick={() => removeWatch(name)}
+                    className="absolute right-2 top-2 text-slate-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <X size={12} />
+                  </button>
+                  <div className="flex items-center justify-between pr-4">
+                    <div className="flex items-center gap-1.5">
+                      <ChevronRight size={10} className="text-slate-600 group-hover:text-slate-400" />
+                      <span className="text-[12px] font-mono font-medium text-slate-300">{name}</span>
+                    </div>
+                    {isDefined && (
+                      <span className="text-[9px] px-1 bg-white/5 text-slate-500 rounded font-mono">
+                        {typeof val}
+                      </span>
+                    )}
+                  </div>
+                  <div className="pl-4 flex items-center gap-2">
+                    {isDefined ? (
+                      <>
+                        {typeof val === 'number' ? <Hash size={10} className="text-indigo-500" /> : <Type size={10} className="text-emerald-500" />}
+                        <span className="text-[12px] font-mono text-indigo-400 break-all">
+                          {JSON.stringify(val)}
+                        </span>
+                      </>
+                    ) : (
+                      <span className="text-[11px] font-mono text-slate-600 italic">undefined</span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+            
+            <form onSubmit={handleAddWatch} className="flex items-center gap-2 px-2 py-1 mt-1">
+              <Plus size={12} className="text-slate-500" />
+              <input
+                type="text"
+                value={newWatch}
+                onChange={e => setNewWatch(e.target.value)}
+                placeholder="Add expression to watch..."
+                className="flex-1 bg-transparent border-none text-[11px] font-mono text-slate-300 placeholder-slate-600 focus:outline-none focus:ring-0"
+              />
+            </form>
+          </div>
         </div>
 
-        <div className="p-2 space-y-1">
-          {Object.entries(variables).length === 0 ? (
-            <div className="px-3 py-4 text-center text-slate-600 italic text-[11px]">
-              No variables in scope
-            </div>
-          ) : (
-            Object.entries(variables).map(([name, val]) => (
-              <div 
-                key={name}
-                className="group flex flex-col gap-0.5 p-2 rounded hover:bg-white/[0.02] transition-colors border border-transparent hover:border-white/5"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5">
-                    <ChevronRight size={10} className="text-slate-600 group-hover:text-slate-400" />
-                    <span className="text-[12px] font-mono font-medium text-slate-300">{name}</span>
-                  </div>
-                  <span className="text-[9px] px-1 bg-white/5 text-slate-500 rounded font-mono">
-                    {typeof val}
-                  </span>
-                </div>
-                <div className="pl-4 flex items-center gap-2">
-                  {typeof val === 'number' ? <Hash size={10} className="text-indigo-500" /> : <Type size={10} className="text-emerald-500" />}
-                  <span className="text-[12px] font-mono text-indigo-400 break-all">
-                    {JSON.stringify(val)}
-                  </span>
-                </div>
+        {/* Local Variables Section */}
+        <div className="flex flex-col">
+          <div className="px-4 py-2 flex items-center gap-2 text-slate-500 border-b border-white/[0.03] bg-white/[0.01]">
+            <Database size={12} />
+            <span className="text-[10px] font-bold uppercase tracking-widest">Locals</span>
+          </div>
+          <div className="p-2 space-y-1">
+            {Object.entries(variables).length === 0 ? (
+              <div className="px-3 py-4 text-center text-slate-600 italic text-[11px]">
+                No variables in scope
               </div>
-            ))
-          )}
+            ) : (
+              Object.entries(variables).map(([name, val]) => (
+                <div 
+                  key={name}
+                  className="group flex flex-col gap-0.5 p-2 rounded hover:bg-white/[0.02] transition-colors border border-transparent hover:border-white/5"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <ChevronRight size={10} className="text-slate-600 group-hover:text-slate-400" />
+                      <span className="text-[12px] font-mono font-medium text-slate-300">{name}</span>
+                    </div>
+                    <span className="text-[9px] px-1 bg-white/5 text-slate-500 rounded font-mono">
+                      {typeof val}
+                    </span>
+                  </div>
+                  <div className="pl-4 flex items-center gap-2">
+                    {typeof val === 'number' ? <Hash size={10} className="text-indigo-500" /> : <Type size={10} className="text-emerald-500" />}
+                    <span className="text-[12px] font-mono text-indigo-400 break-all">
+                      {JSON.stringify(val)}
+                    </span>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
         </div>
       </div>
 

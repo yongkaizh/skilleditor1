@@ -308,12 +308,12 @@ export const CheatsheetDrawer: React.FC<CheatsheetDrawerProps> = ({ isOpen, onCl
                             <button 
                               className="w-full bg-white/[0.02] border border-white/[0.04] text-[#e2e8f0] p-3 pr-10 rounded-xl text-left cursor-pointer transition-all hover:border-indigo-500/30 hover:bg-indigo-500/5 flex flex-col gap-1" 
                               onClick={() => {
-                                onInsert(item.text);
+                                setSelectedItem(item);
                               }}
                             >
                               <div className="flex items-center justify-between w-full">
                                 <span className="font-semibold text-[13px] group-hover:text-indigo-400 transition-colors font-mono">{item.name}</span>
-                                <span className="text-[9px] text-indigo-500/50 font-mono bg-indigo-500/5 px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity uppercase tracking-widest font-bold">Insert</span>
+                                <span className="text-[9px] text-indigo-500/50 font-mono bg-indigo-500/5 px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity uppercase tracking-widest font-bold">Details</span>
                               </div>
                               {item.desc && (
                                 <p className="text-[10px] text-slate-500 leading-relaxed font-normal line-clamp-1">{item.desc}</p>

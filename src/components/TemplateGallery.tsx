@@ -10,12 +10,15 @@ import {
   Database,
   Trash2,
   Layers,
+  FilePlus,
+  Code,
 } from "lucide-react";
 
 interface TemplateGalleryProps {
   isOpen: boolean;
   onClose: () => void;
   onSelect: (text: string) => void;
+  onInsert?: (text: string) => void;
   isInline?: boolean;
 }
 
@@ -409,6 +412,7 @@ export const TemplateGallery: React.FC<TemplateGalleryProps> = ({
   isOpen,
   onClose,
   onSelect,
+  onInsert,
   isInline,
 }) => {
   const [searchQuery, setSearchQuery] = React.useState("");
@@ -477,11 +481,11 @@ export const TemplateGallery: React.FC<TemplateGalleryProps> = ({
         {filteredTemplates.map((tpl) => (
           <div
             key={tpl.id}
-            className="bg-white/[0.02] border border-white/[0.04] p-4 rounded-xl cursor-pointer transition-all duration-200 hover:border-indigo-500/30 hover:bg-indigo-500/5 group"
             onClick={() => {
               onSelect(tpl.content);
               if (!isInline) onClose();
             }}
+            className="bg-white/[0.02] border border-white/[0.04] p-4 rounded-xl transition-all duration-200 hover:border-indigo-500/30 hover:bg-indigo-500/5 group flex flex-col gap-3 cursor-pointer"
           >
             <div className="flex items-start gap-3">
               <div className="p-2 bg-white/5 rounded-lg border border-white/10 shrink-0 group-hover:scale-105 group-hover:border-indigo-500/30 transition-all duration-300">
@@ -494,6 +498,30 @@ export const TemplateGallery: React.FC<TemplateGalleryProps> = ({
                 </div>
                 <p className="text-slate-500 text-[10px] mt-1 leading-relaxed line-clamp-2">{tpl.desc}</p>
               </div>
+            </div>
+            
+            <div className="flex items-center gap-2 mt-auto pt-2 border-t border-white/[0.04] opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onSelect(tpl.content);
+                  if (!isInline) onClose();
+                }}
+                className="flex-1 flex items-center justify-center gap-1.5 py-1.5 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 rounded-lg text-[10px] uppercase font-bold tracking-wider transition-colors"
+              >
+                <FilePlus size={12} /> New File
+              </button>
+              {onInsert && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onInsert(tpl.content);
+                  }}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 rounded-lg text-[10px] uppercase font-bold tracking-wider transition-colors"
+                >
+                  <Code size={12} /> Insert
+                </button>
+              )}
             </div>
           </div>
         ))}

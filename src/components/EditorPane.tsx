@@ -3,6 +3,7 @@ import React from 'react';
 import Editor, { useMonaco } from '@monaco-editor/react';
 import { configureMonaco } from '../editor/monaco-config';
 import { levenshteinDistance } from '../editor/utils';
+import { skillInterpreter, type ASTNode } from '../editor/skillInterpreter';
 
 interface EditorPaneProps {
   value: string;
@@ -68,18 +69,57 @@ export const EditorPane: React.FC<EditorPaneProps> = ({
       
       const functionNames = manualFns.map(f => f.name);
       
-      // Extract user-defined functions
+      const localFuncMap = new Map<string, number>();
       const localFunctions: string[] = [];
-      const defRegex = /\b(?:procedure|defun)\s*\(\s*([a-zA-Z_]\w*)/g;
+      const defRegex = /\b(?:procedure|defun)\s*\(\s*([a-zA-Z_]\w*)\s*\((.*?)\)/g;
       let defMatch;
       while ((defMatch = defRegex.exec(value)) !== null) {
         localFunctions.push(defMatch[1]);
+        const argsStr = defMatch[2].trim();
+        const argsCount = argsStr ? argsStr.split(/\s+/).length : 0;
+        localFuncMap.set(defMatch[1], argsCount);
       }
       
-            const projectFuncs = projectState.functions.filter((f: any) => f.fileName !== activeFileName);
+      const projectFuncs = projectState.functions.filter((f: any) => f.fileName !== activeFileName);
       const projectFuncNames = projectFuncs.map((f: any) => f.name);
+      projectFuncs.forEach((f: any) => {
+        const argsStr = f.args.trim();
+        localFuncMap.set(f.name, argsStr ? argsStr.split(/\s+/).length : 0);
+      });
       
-const parenStack: { line: number; col: number }[] = [];
+      // Parse AST to check parameter counts
+      try {
+        const tokens = skillInterpreter.tokenize(value);
+        const ast = skillInterpreter.parse(tokens);
+        
+        const visitNode = (node: ASTNode) => {
+          if (!node) return;
+          if (node.type === 'call') {
+            const expectedCount = localFuncMap.get(node.fn);
+            if (expectedCount !== undefined && node.args.length !== expectedCount) {
+              const msg = node.args.length > expectedCount ? "too many arguments" : "too few arguments";
+              markers.push({
+                message: `Argument mismatch: ${msg} for function '${node.fn}'. Expected ${expectedCount}, got ${node.args.length}.`,
+                severity: monaco.MarkerSeverity.Error,
+                startLineNumber: node.line,
+                startColumn: 1,
+                endLineNumber: node.line,
+                endColumn: 100,
+              });
+            }
+            node.args.forEach(visitNode);
+          } else if (node.type === 'list') {
+            node.elements.forEach(visitNode);
+          } else if (node.type === 'quote' && node.value) {
+            visitNode(node.value);
+          }
+        };
+        ast.forEach(visitNode);
+      } catch (e) {
+        // Ignore parser errors during typing
+      }
+      
+      const parenStack: { line: number; col: number }[] = [];
       const procBlocks: { startLine: number; endLine: number }[] = [];
       let currentProcLine: number | null = null;
 
@@ -299,32 +339,35 @@ const parenStack: { line: number; col: number }[] = [];
           }
         }));
         
-        // Add Breakpoint Decorations
-        const breakpointDecs: any[] = breakpoints.map(line => ({
-          range: new monaco.Range(line, 1, line, 1),
-          options: {
-            isWholeLine: false,
-            glyphMarginClassName: 'breakpoint-margin',
-            glyphMarginHoverMessage: { value: 'Breakpoint' }
-          }
-        }));
-        
         if (editorRef.current) {
            if (!editorRef.current.decorationIds) {
              editorRef.current.decorationIds = [];
            }
-           if (!editorRef.current.breakpointDecorationIds) {
-             editorRef.current.breakpointDecorationIds = [];
-           }
-           
            editorRef.current.decorationIds = editorRef.current.deltaDecorations(editorRef.current.decorationIds, decs);
-           editorRef.current.breakpointDecorationIds = editorRef.current.deltaDecorations(editorRef.current.breakpointDecorationIds, breakpointDecs);
         }
       }
     }, 500); // 500ms debounce
-
     return () => clearTimeout(timeout);
-  }, [monaco, value, manualFns, activeFileName, breakpoints]);
+  }, [monaco, value, manualFns, activeFileName]);
+
+  // Handle breakpoint decorations instantly
+  React.useEffect(() => {
+    if (!monaco || !editorRef.current) return;
+
+    const breakpointDecs: any[] = breakpoints.map(line => ({
+      range: new monaco.Range(line, 1, line, 1),
+      options: {
+        isWholeLine: false,
+        glyphMarginClassName: 'breakpoint-margin',
+        glyphMarginHoverMessage: { value: 'Breakpoint' }
+      }
+    }));
+
+    if (!editorRef.current.breakpointDecorationIds) {
+      editorRef.current.breakpointDecorationIds = [];
+    }
+    editorRef.current.breakpointDecorationIds = editorRef.current.deltaDecorations(editorRef.current.breakpointDecorationIds, breakpointDecs);
+  }, [monaco, breakpoints]);
 
   return (
     <div className="h-full w-full">
