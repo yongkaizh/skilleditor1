@@ -203,6 +203,12 @@ function App() {
   const [showMinimap, setShowMinimap] = useState(true);
   const [wordWrap, setWordWrap] = useState(true);
   const [fontSize, setFontSize] = useState(14);
+  const [apiKey, setApiKey] = useState(() => localStorage.getItem("cadence-workspace-gemini-key") || "");
+
+  useEffect(() => {
+    localStorage.setItem("cadence-workspace-gemini-key", apiKey);
+  }, [apiKey]);
+
   const [isSimulating, setIsSimulating] = useState(false);
   const [proposedRefactor, setProposedRefactor] = useState<RefactorResult | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -687,6 +693,51 @@ function App() {
     }
   };
 
+  const handleExpertAnalyze = async (msg: ConsoleMessage) => {
+    if (!apiKey) {
+      showToast("Please enter an API Key in Settings first.");
+      setIsSettingsOpen(true);
+      return;
+    }
+
+    setConsoleOutput(prev => prev.map(m => m.id === msg.id ? { ...m, isExpertAnalyzing: true } : m));
+    
+    try {
+      const response = await fetch("/api/expert/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          code: content,
+          error: msg.text,
+          context: msg.details || "",
+          apiKey
+        })
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Analysis failed");
+
+      setConsoleOutput(prev => {
+        const result = [...prev];
+        const idx = result.findIndex(m => m.id === msg.id);
+        if (idx !== -1) {
+          result[idx] = { ...result[idx], isExpertAnalyzing: false };
+          result.splice(idx + 1, 0, {
+            id: uuidv4(),
+            type: 'info',
+            text: 'Expert Analysis:',
+            details: data.analysis,
+            timestamp: new Date().toLocaleTimeString()
+          });
+        }
+        return result;
+      });
+    } catch (err: any) {
+      setConsoleOutput(prev => prev.map(m => m.id === msg.id ? { ...m, isExpertAnalyzing: false } : m));
+      showToast(err.message || "Expert analysis failed");
+    }
+  };
+
     const handleRefactorCode = () => {
     if (!content) return;
     const result = refactorSkillCode(content);
@@ -965,7 +1016,7 @@ function App() {
 
           {isConsoleOpen && (
             <div className="h-64 flex flex-col min-w-0 border-t border-white/[0.04]">
-              <Console messages={consoleOutput} onClear={() => setConsoleOutput([])} onClose={() => setIsConsoleOpen(false)} onApplyQuickFix={handleApplyQuickFix} onCommand={handleConsoleCommand}  onRefactor={handleRefactorCode} isSimulating={isSimulating} />
+              <Console messages={consoleOutput} onClear={() => setConsoleOutput([])} onClose={() => setIsConsoleOpen(false)} onApplyQuickFix={handleApplyQuickFix} onCommand={handleConsoleCommand} onExpertAnalyze={handleExpertAnalyze} onRefactor={handleRefactorCode} isSimulating={isSimulating} />
             </div>
           )}
         </div>
@@ -1021,6 +1072,8 @@ function App() {
         setShowMinimap={setShowMinimap} 
         fontSize={fontSize} 
         setFontSize={setFontSize} 
+        apiKey={apiKey}
+        setApiKey={setApiKey}
       />
       <GitHubSyncModal
         isOpen={isGitHubModalOpen}
