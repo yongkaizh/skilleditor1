@@ -4374,3 +4374,227 @@ t_subName: Sub-name identifier string to assign.
 @example
 rodSubNameObj(myMultipartObj "subPin") ; Names a sub-element inside a multipart ROD object
 @desc Assigns a sub-name to a nested component or sub-shape within a complex or multipart relative object design (ROD) object.
+@function outfile
+@usage outfile(t_fileName [t_mode])
+@category File I/O
+@parameters
+t_fileName: String representing the path to the file.
+t_mode: Optional string representing the mode. "w" for write (default), "a" for append.
+@example
+port = outfile("/tmp/my_log.txt" "w")
+if(port then
+  fprintf(port "Log entry\n")
+  close(port)
+)
+@desc Opens a file for writing or appending and returns an output port. Returns nil if the file cannot be opened.
+
+@function infile
+@usage infile(t_fileName)
+@category File I/O
+@parameters
+t_fileName: String representing the path to the file.
+@example
+port = infile("/tmp/my_log.txt")
+if(port then
+  while(line = gets(line port)
+    printf("Read: %s" line)
+  )
+  close(port)
+)
+@desc Opens a file for reading and returns an input port. Returns nil if the file cannot be opened.
+
+@function inportp
+@usage inportp(p_port)
+@category File I/O
+@desc Returns t if the argument is a valid input port.
+
+@function outportp
+@usage outportp(p_port)
+@category File I/O
+@desc Returns t if the argument is a valid output port.
+
+
+@function newline
+@usage newline([p_port])
+@category File I/O
+@desc Outputs a newline character to the specified port (default is standard output).
+
+@function drain
+@usage drain([p_port])
+@category File I/O
+@desc Flushes the output buffer of the specified port (default is standard output).
+
+@function portp
+@usage portp(g_obj)
+@category File I/O
+@desc Returns t if the object is an I/O port.
+
+@function read
+@usage read([p_port])
+@category File I/O
+@desc Reads a SKILL expression from the given port.
+
+@function readstring
+@usage readstring(t_string)
+@category String
+@desc Reads and parses a SKILL expression from a string.
+
+@function errsetstring
+@usage errsetstring(t_string [b_printError])
+@category Core
+@desc Evaluates a SKILL string expression within an error-catching block. Returns the result or nil on error.
+
+@function dbCreateGroup
+@usage dbCreateGroup(d_cv t_name l_objects)
+@category Database
+@desc Creates a named group of objects in the cellview.
+
+@function dbCreateMarker
+@usage dbCreateMarker(d_cv t_msg t_toolName l_bBox)
+@category Database
+@desc Creates a marker in the cellview to indicate an error or warning.
+
+@function dbGetTrueBBox
+@usage dbGetTrueBBox(d_obj)
+@category Database
+@desc Returns the true bounding box of the given database object.
+
+@function leHiClearPanes
+@usage leHiClearPanes()
+@category Layout
+@desc Clears all layout window panes.
+
+@function leHiMakeCell
+@usage leHiMakeCell()
+@category Layout
+@desc Interactively creates a new cell from selected objects in the layout.
+
+@function schCheckAndSave
+@usage schCheckAndSave(d_cv)
+@category Schematic
+@desc Programmatically checks and saves a schematic cellview.
+
+@function hiSetBindKey
+@usage hiSetBindKey(t_tool t_key t_command)
+@category UI
+@desc Assigns a SKILL command to a keyboard shortcut (bindkey) for a specific tool.
+
+@function hiGetBindKey
+@usage hiGetBindKey(t_tool t_key)
+@category UI
+@desc Returns the SKILL command currently assigned to the given bindkey.
+
+@function xCoord
+@usage xCoord(l_point)
+@category Math
+@desc Returns the X coordinate of a point.
+
+@function yCoord
+@usage yCoord(l_point)
+@category Math
+@desc Returns the Y coordinate of a point.
+
+@function centerBox
+@usage centerBox(l_bBox)
+@category Math
+@desc Returns the center point of a bounding box.
+
+@function bBoxWidth
+@usage bBoxWidth(l_bBox)
+@category Math
+@desc Returns the width of a bounding box.
+
+@function bBoxHeight
+@usage bBoxHeight(l_bBox)
+@category Math
+@desc Returns the height of a bounding box.
+
+@function concat
+@usage concat(g_1 [g_2 ...])
+@category Core
+@desc Concatenates arguments into a single symbol.
+
+@function symbolToString
+@usage symbolToString(s_sym)
+@category Core
+@desc Converts a symbol to a string.
+
+@function stringToSymbol
+@usage stringToSymbol(t_str)
+@category Core
+@desc Converts a string to a symbol.
+
+@function lowerLeft
+@usage lowerLeft(l_bBox)
+@category Math
+@desc Returns the lower-left coordinate of a bounding box.
+
+@function upperRight
+@usage upperRight(l_bBox)
+@category Math
+@desc Returns the upper-right coordinate of a bounding box.
+
+@function min
+@usage min(n_1 n_2 ...)
+@category Math
+@desc Returns the minimum of its arguments.
+
+@function max
+@usage max(n_1 n_2 ...)
+@category Math
+@desc Returns the maximum of its arguments.
+
+@function fix
+@usage fix(n_num)
+@category Math
+@desc Truncates a number to an integer.
+
+@function leGetEnv
+@usage leGetEnv(t_envVar)
+@category Layout
+@desc Gets the value of a layout environment variable.
+
+@function leSetEnv
+@usage leSetEnv(t_envVar g_value)
+@category Layout
+@desc Sets the value of a layout environment variable.
+
+@function and
+@usage and(g_arg1 ...)
+@category Core
+@desc Logical AND. Returns nil if any argument evaluates to nil.
+
+@function or
+@usage or(g_arg1 ...)
+@category Core
+@desc Logical OR. Returns the first non-nil argument.
+
+@function null
+@usage null(g_arg)
+@category Core
+@desc Returns t if the argument is nil (same as not).
+
+@function neq
+@usage neq(g_1 g_2)
+@category Core
+@desc Returns t if the arguments are not eq.
+
+@function lessp
+@usage lessp(n_1 n_2)
+@category Math
+@desc Returns t if n_1 < n_2.
+
+@function greaterp
+@usage greaterp(n_1 n_2)
+@category Math
+@desc Returns t if n_1 > n_2.
+
+@function leqp
+@usage leqp(n_1 n_2)
+@category Math
+@desc Returns t if n_1 <= n_2.
+
+@function geqp
+@usage geqp(n_1 n_2)
+@category Math
+@desc Returns t if n_1 >= n_2.
