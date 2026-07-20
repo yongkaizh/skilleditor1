@@ -1,6 +1,7 @@
 import { projectState } from "./projectState";
 import type { Monaco } from '@monaco-editor/react';
 import type { SkillFunction } from './manualParser';
+import { extractDefinedFunctions } from "./utils";
 
 const SKILL_KEYWORDS = [
   'procedure', 'defun', 'let', 'prog', 'if', 'then', 'else', 'case', 'cond',
@@ -9,13 +10,10 @@ const SKILL_KEYWORDS = [
 ];
 
 function extractLocalProcedures(text: string): { name: string, args: string }[] {
-  const procs: { name: string, args: string }[] = [];
-  const defRegex = /\b(?:procedure|defun)\s*\(\s*([a-zA-Z_]\w*)\s*\((.*?)\)/g;
-  let match;
-  while ((match = defRegex.exec(text)) !== null) {
-    procs.push({ name: match[1], args: match[2] });
-  }
-  return procs;
+  return extractDefinedFunctions(text).map(fn => ({
+    name: fn.name,
+    args: fn.args
+  }));
 }
 
 function extractLocalVariables(text: string): string[] {
@@ -67,10 +65,9 @@ function extractLocalVariables(text: string): string[] {
   }
 
   // Extract parameters from procedure/defun definitions:
-  const procRegex = /\b(?:procedure|defun)\s*\(\s*[a-zA-Z_]\w*\s*\(([^)]*)\)/g;
-  while ((match = procRegex.exec(text)) !== null) {
-    const paramsStr = match[1];
-    const paramWords = paramsStr.match(/\b[a-zA-Z_]\w*\b/g);
+  const localProcs = extractDefinedFunctions(text);
+  for (const proc of localProcs) {
+    const paramWords = proc.args.match(/\b[a-zA-Z_]\w*\b/g);
     if (paramWords) {
       for (const p of paramWords) {
         vars.add(p);

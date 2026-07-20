@@ -2,7 +2,7 @@ import { projectState } from "../editor/projectState";
 import React from 'react';
 import Editor, { useMonaco } from '@monaco-editor/react';
 import { configureMonaco } from '../editor/monaco-config';
-import { levenshteinDistance } from '../editor/utils';
+import { levenshteinDistance, extractDefinedFunctions } from '../editor/utils';
 import { skillInterpreter, type ASTNode } from '../editor/skillInterpreter';
 
 interface EditorPaneProps {
@@ -72,14 +72,14 @@ export const EditorPane: React.FC<EditorPaneProps> = ({
       
       const localFuncMap = new Map<string, number>();
       const localFunctions: string[] = [];
-      const defRegex = /\b(?:procedure|defun)\s*\(\s*([a-zA-Z_]\w*)\s*\((.*?)\)/g;
-      let defMatch;
-      while ((defMatch = defRegex.exec(value)) !== null) {
-        localFunctions.push(defMatch[1]);
-        const argsStr = defMatch[2].trim();
+      const extractedLocal = extractDefinedFunctions(value);
+      extractedLocal.forEach(fn => {
+        localFunctions.push(fn.name);
+        // Replace punctuation inside args like comma/parens to correctly count space-separated args
+        const argsStr = fn.args.replace(/[,()]/g, ' ').trim();
         const argsCount = argsStr ? argsStr.split(/\s+/).length : 0;
-        localFuncMap.set(defMatch[1], argsCount);
-      }
+        localFuncMap.set(fn.name, argsCount);
+      });
       
       const projectFuncs = projectState.functions.filter((f: any) => f.fileName !== activeFileName);
       const projectFuncNames = projectFuncs.map((f: any) => f.name);

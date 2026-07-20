@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { X, ListTree, Box, FunctionSquare } from 'lucide-react';
+import { extractDefinedFunctions } from '../editor/utils';
 
 interface CodeOutlineSidebarProps {
   content: string;
@@ -15,7 +16,10 @@ interface OutlineItem {
 export const CodeOutlineSidebar: React.FC<CodeOutlineSidebarProps> = ({ content, onNavigate, onClose }) => {
   const { procedures, globals } = useMemo(() => {
     const lines = content.split('\n');
-    const procs: OutlineItem[] = [];
+    const procs = extractDefinedFunctions(content).map(fn => ({
+      name: fn.name,
+      line: fn.line
+    }));
     const glbs: OutlineItem[] = [];
     
     let depth = 0;
@@ -24,10 +28,6 @@ export const CodeOutlineSidebar: React.FC<CodeOutlineSidebarProps> = ({ content,
 
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
-      const procMatch = line.match(/\b(?:procedure|defun)\s*\(\s*([a-zA-Z_]\w*)/);
-      if (procMatch) {
-        procs.push({ name: procMatch[1], line: i + 1 });
-      }
 
       if (depth === 0) {
         const assignMatch = line.match(/^\s*([a-zA-Z_]\w*)\s*=/);
