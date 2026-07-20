@@ -57,3 +57,19 @@
 .error-line-highlight {
   background-color: rgba(239, 68, 68, 0.1); /* Red-500 with 10% opacity */
 }
+
+/* Shift the Monaco find and replace widget down so its tooltips are not cut off or covered by the header/breadcrumbs UI */
+.monaco-editor .find-widget {
+  top: 40px !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 6px !important;
+  background-color: #1a1c23 !important;
+  z-index: 50 !important;
+}
+
+/* Ensure that Monaco hovers, tooltips and suggestions have proper z-index and display */
+.monaco-editor .monaco-hover {
+  z-index: 9999 !important;
+}
+

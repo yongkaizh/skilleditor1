@@ -1168,7 +1168,7 @@ function App() {
                 </button>
               </div>
             </div>
-            <div className="flex-1 overflow-y-auto relative">
+            <div className="flex-1 overflow-hidden relative">
               <EditorPane activeFileName={activeFile.name} value={content} onChange={handleEditorChange} onMount={handleEditorMount} showMinimap={showMinimap} wordWrap={wordWrap} fontSize={fontSize} manualFns={manualFns} breakpoints={Array.from(breakpoints.get(activeFile.name) || [])} onBreakpointToggle={handleBreakpointToggle} onNavigate={handleNavigate} />
             </div>
           </section>
