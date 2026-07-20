@@ -1,5 +1,5 @@
 import React, { useState, useRef, useMemo } from 'react';
-import { FileCode, Plus, Trash2, Edit2, Check, X, Folder, FolderOpen, ChevronRight, ChevronDown, Upload, FolderUp, Download } from 'lucide-react';
+import { FileCode, Plus, Trash2, Edit2, Check, X, Folder, FolderOpen, ChevronRight, ChevronDown, Upload, FolderUp, FileArchive, Download } from 'lucide-react';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import { v4 as uuidv4 } from 'uuid';
@@ -320,11 +320,18 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
           </button>
           
           <button 
+            onClick={() => handleExportFile(activeFileId)}
+            className="p-1 hover:bg-white/10 rounded text-[#94a3b8] hover:text-white transition-colors"
+            title="Export Current File"
+          >
+            <Download size={14} />
+          </button>
+          <button 
             onClick={handleExportAll}
             className="p-1 hover:bg-white/10 rounded text-[#94a3b8] hover:text-white transition-colors"
             title="Export Project"
           >
-            <Download size={14} />
+            <FileArchive size={14} />
           </button>
           <button 
             onClick={() => handleAddFile('')}
@@ -365,7 +372,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
                   setContextMenu(null);
                 }}
               >
-                <Download size={14} /> Export
+                <FileArchive size={14} /> Export
               </button>
               <button 
                 className="w-full text-left px-3 py-1.5 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 flex items-center gap-2"
@@ -397,7 +404,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
                   setContextMenu(null);
                 }}
               >
-                <Download size={14} /> Export Folder
+                <FileArchive size={14} /> Export Folder
               </button>
             </>
           )}
