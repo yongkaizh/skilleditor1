@@ -792,6 +792,182 @@ const LESSONS: Lesson[] = [
     validation: (text: string) => /gScore/.test(text) && /fScore/.test(text) && /Manhattan/.test(text) || /abs/.test(text),
     explanation: 'A* is the industry standard for point-to-point routing, balancing path length against congestion costs.'
   },
+  {
+    id: 69,
+    title: '69. Introduction to SKILL Data Types',
+    subtitle: 'Data Type Inspection',
+    level: 'Beginner',
+    instructions: 'Cadence SKILL is dynamically typed. This means while variables themselves don\'t have strict types, the values they reference do. The `typeOf` function returns the data type of a value as a symbol (e.g., \'fixnum\', \'flonum\', \'string\', \'symbol\', \'list\', \'vector\', \'table\', \'dbobject\', \'port\'). Inspect the type of the integer value 42 using the `typeOf` function.',
+    hint: 'typeOf(42)',
+    validation: (text: string) => /typeOf\s*\(\s*42\s*\)/.test(text),
+    explanation: 'The `typeOf` function is the primary built-in utility to query the underlying storage or data type of any literal or variable in SKILL.',
+    quiz: {
+      question: "What symbol does typeOf(42) return in Cadence SKILL?",
+      options: ["integer", "fixnum", "int", "number"],
+      answerIndex: 1,
+      explanation: "In Cadence SKILL, standard integers are classified under the 'fixnum' data type."
+    }
+  },
+  {
+    id: 70,
+    title: '70. Checking Numbers: Fixnum vs. Flonum',
+    subtitle: 'Number Predicates',
+    level: 'Beginner',
+    instructions: 'SKILL provides dynamic type-checking predicate functions. For numbers, `integerp(val)` returns `t` for integers, `floatp(val)` returns `t` for floating-point floats, and `numberp(val)` returns `t` for either. Write a conditional statement checking if a value `val` is a float using the `floatp` predicate.',
+    hint: 'floatp(val)',
+    validation: (text: string) => /floatp\s*\(\s*val\s*\)/.test(text),
+    explanation: 'Predicate functions in Lisp-based environments historically end with the suffix \'p\' (for predicate), returning \'t\' for true or \'nil\' for false.',
+    quiz: {
+      question: "Which of the following predicates evaluates to 't' for both integers and floating-point values?",
+      options: ["floatp", "integerp", "numberp", "realp"],
+      answerIndex: 2,
+      explanation: "numberp checks whether a value is numeric, matching both fixnum and flonum types."
+    }
+  },
+  {
+    id: 71,
+    title: '71. Symbols as First-Class Citizens',
+    subtitle: 'Symbol Type',
+    level: 'Beginner',
+    instructions: 'A symbol represents a named identifier. Symbols are created by quoting a name, such as `\'mySymbol`. They can hold values, properties, or procedures. Check if a variable named `x` is a symbol using the built-in predicate `symbolp`.',
+    hint: 'symbolp(x)',
+    validation: (text: string) => /symbolp\s*\(\s*x\s*\)/.test(text),
+    explanation: 'Unlike strings, symbols are entered into a global symbol table (oblist). Comparing symbols using `eq` is an extremely fast, constant-time pointer comparison.',
+    quiz: {
+      question: "What is the result of evaluating typeOf('someSymbol) in the interpreter?",
+      options: ["string", "symbol", "atom", "name"],
+      answerIndex: 1,
+      explanation: "Symbol literals evaluate to symbol objects, whose data type is the symbol 'symbol itself."
+    }
+  },
+  {
+    id: 72,
+    title: '72. String Manipulation & Predicates',
+    subtitle: 'String Type Features',
+    level: 'Beginner',
+    instructions: 'Strings in SKILL are double-quoted character sequences (type `string`). Essential string features include length (`strlen`), substrings (`substring`), and the type predicate `stringp`. Guard a block by checking if a variable `layerName` is a string.',
+    hint: 'stringp(layerName)',
+    validation: (text: string) => /stringp\s*\(\s*layerName\s*\)/.test(text),
+    explanation: '`stringp` is used to validate input arguments in layout automation routines before invoking library operations.',
+    quiz: {
+      question: "Which function is used to calculate the length of a string in Cadence SKILL?",
+      options: ["length", "strlen", "size", "count"],
+      answerIndex: 1,
+      explanation: "strlen(str) returns the length of a string. length(x) is for counting elements of lists, vectors, or tables."
+    }
+  },
+  {
+    id: 73,
+    title: '73. Lists & Cons Cells',
+    subtitle: 'Linked List Construction',
+    level: 'Intermediate',
+    instructions: 'Lists (type `list`) are built from nested pairs called "cons cells" containing a head (`car`) and tail (`cdr`). You can prepend a new head to a list using the `cons` constructor. Prepend the string "M1" to a list named `otherLayers` using `cons`.',
+    hint: 'cons("M1" otherLayers)',
+    validation: (text: string) => /cons\s*\(\s*"M1"\s+otherLayers\s*\)/.test(text),
+    explanation: '`cons` allocates a single cons cell in memory, referencing the new item as its head (car) and the target list as its tail (cdr), which operates in O(1) time.',
+    quiz: {
+      question: "If a variable L is bound to list(2, 3), what is the evaluation of cons(1 L)?",
+      options: ["list(1 2 3)", "list(1 list(2 3))", "list(2 3 1)", "nil"],
+      answerIndex: 0,
+      explanation: "cons prepends the first argument to the front of the list, producing list(1 2 3)."
+    }
+  },
+  {
+    id: 74,
+    title: '74. Fast Index Arrays: Vectors',
+    subtitle: 'Vector Type Features',
+    level: 'Intermediate',
+    instructions: 'While lists require O(N) linear time to traverse, SKILL provides vectors (type `vector`) for fast, constant-time O(1) index-based array access. Create a 10-element vector initialized to 0.0 using `makeVector`.',
+    hint: 'makeVector(10 0.0)',
+    validation: (text: string) => /makeVector\s*\(\s*10\s+0\.0\s*\)/.test(text),
+    explanation: 'Vector elements can be directly read or written using bracket notation, e.g., `myVec[4] = 12.5`.',
+    quiz: {
+      question: "What predicate is used to verify if an object is a fixed-size vector array?",
+      options: ["vectorp", "arrayp", "matrixp", "listp"],
+      answerIndex: 0,
+      explanation: "vectorp checks if the underlying datatype is a high-performance vector."
+    }
+  },
+  {
+    id: 75,
+    title: '75. High-Performance Hash Tables',
+    subtitle: 'Table Type Features',
+    level: 'Intermediate',
+    instructions: 'Hash Tables (type `table`) store key-value associations with average O(1) retrieval complexity. Create a hash table named `layerMap` with a default fallback value of `nil` using the `makeTable` constructor.',
+    hint: 'layerMap = makeTable("layerMap" nil)',
+    validation: (text: string) => /layerMap\s*=\s*makeTable\s*\(\s*"layerMap"\s+nil\s*\)/.test(text),
+    explanation: 'Subscript bracket lookup `table[key]` can be used to query or insert key-value mappings dynamically inside a hash table.',
+    quiz: {
+      question: "Which function is used to instantiate a hash table in SKILL?",
+      options: ["makeHash()", "createTable()", "makeTable()", "dict()"],
+      answerIndex: 2,
+      explanation: "makeTable creates a hash table, where the first argument is a debug identifier and the second is the default fallback value for missing keys."
+    }
+  },
+  {
+    id: 76,
+    title: '76. Database Objects: dbobject',
+    subtitle: 'Cadence Database Type',
+    level: 'Advanced',
+    instructions: 'In Cadence Virtuoso, design data (such as cellviews, instances, vias, paths, nets, and shapes) are represented as database objects (type `dbobject`). Verify if a variable named `targetShape` references a valid database object using the `dbobjectp` predicate.',
+    hint: 'dbobjectp(targetShape)',
+    validation: (text: string) => /dbobjectp\s*\(\s*targetShape\s*\)/.test(text),
+    explanation: 'Database objects are handles that map directly to the OpenAccess CAD design database in memory.',
+    quiz: {
+      question: "What is the datatype representation of a cellview or polygon shape in Cadence SKILL?",
+      options: ["pointer", "dbobject", "dictionary", "record"],
+      answerIndex: 1,
+      explanation: "All layout layout entities are represented as dbobject structures, enabling high-performance attribute access via arrow operators."
+    }
+  },
+  {
+    id: 77,
+    title: '77. Association Lists (Alists) vs. Hash Tables',
+    subtitle: 'Selecting Association Types',
+    level: 'Intermediate',
+    instructions: 'Association Lists (Alists) are linked lists of key-value sub-lists (e.g., `list(list(\'M1 0.15) list(\'M2 0.20))`). They are perfect for small, lightweight mappings. Search an Alist named `myAlist` for key symbol `\'M1` using `assoc`.',
+    hint: 'assoc(\'M1 myAlist)',
+    validation: (text: string) => /assoc\s*\(\s*'M1\s+myAlist\s*\)/.test(text),
+    explanation: '`assoc` performs a linear search, returning the entire matching sub-list (e.g., `(M1 0.15)`) or `nil` if the key is not found.',
+    quiz: {
+      question: "What does assoc('key Alist) return if the key is found?",
+      options: ["The associated value only", "The entire sub-list matching the key", "t", "The index position"],
+      answerIndex: 1,
+      explanation: "assoc returns the complete matching sub-list, which can be further decomposed with cadr or nth."
+    }
+  },
+  {
+    id: 78,
+    title: '78. User Classes & Instances: SKILL++ OOD',
+    subtitle: 'Object Oriented Types',
+    level: 'Expert',
+    instructions: 'SKILL++ provides full object-oriented programming (OOP) support inspired by the Common Lisp Object System (CLOS). It allows defining custom classes with inheritance. Verify if an object `myObj` is an instance of a class by retrieving its class object with the `classOf` function.',
+    hint: 'classOf(myObj)',
+    validation: (text: string) => /classOf\s*\(\s*myObj\s*\)/.test(text),
+    explanation: 'SKILL++ uses defclass to create class definitions and defmethod to write polymorphic methods specialized on argument types.',
+    quiz: {
+      question: "Which macro is used to define a custom user class in SKILL++?",
+      options: ["createClass", "defclass", "class", "structure"],
+      answerIndex: 1,
+      explanation: "defclass defines slot properties, inheritance hierarchies, and default initforms for custom data types."
+    }
+  },
+  {
+    id: 79,
+    title: '79. File Ports & I/O Channels',
+    subtitle: 'Port Type Features',
+    level: 'Intermediate',
+    instructions: 'Files are read from or written to using data ports (type `port`). Use `infile` to open a file named `"setup.il"` for input and assign the returned file port to `inPort`.',
+    hint: 'inPort = infile("setup.il")',
+    validation: (text: string) => /inPort\s*=\s*infile\s*\(\s*"setup\.il"\s*\)/.test(text) || /infile\s*\(\s*"setup\.il"\s*\)/.test(text),
+    explanation: 'Always close opened file streams using close(port) to release file handles in the operating system.',
+    quiz: {
+      question: "Which predicate checks if a variable is an active input or output port?",
+      options: ["portp", "filep", "iop", "channelp"],
+      answerIndex: 0,
+      explanation: "The portp predicate evaluates to t if its argument is an open input or output file port."
+    }
+  },
 ];
 
 export const TutorialSidebar: React.FC<TutorialSidebarProps> = ({ currentText, isActive, onClose, isInline, onInsertCode }) => {
