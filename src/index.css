@@ -67,7 +67,16 @@
 }
 
 /* Ensure that Monaco hovers, tooltips and suggestions have proper z-index and display */
-.monaco-editor .monaco-hover {
+.monaco-editor .monaco-hover,
+.monaco-hover,
+.monaco-editor .editor-widget,
+.monaco-editor .suggest-widget,
+.monaco-editor .parameter-hints-widget,
+.monaco-editor .rename-widget,
+.monaco-editor .peekview-widget,
+.peekview-widget,
+.peekViewWidget,
+.context-view {
   z-index: 9999 !important;
 }
 
