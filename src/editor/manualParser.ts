@@ -74,5 +74,19 @@ export function parseManual(rawText: string): SkillFunction[] {
     functions.push(currentFunc as SkillFunction);
   }
 
-  return functions;
+  
+  const deduplicated = new Map<string, SkillFunction>();
+  for (const fn of functions) {
+    if (deduplicated.has(fn.name)) {
+      const existing = deduplicated.get(fn.name)!;
+      const existingScore = (existing.description?.length || 0) + (existing.example?.length || 0) + (existing.parameters?.length || 0);
+      const newScore = (fn.description?.length || 0) + (fn.example?.length || 0) + (fn.parameters?.length || 0);
+      if (newScore > existingScore) {
+        deduplicated.set(fn.name, fn);
+      }
+    } else {
+      deduplicated.set(fn.name, fn);
+    }
+  }
+  return Array.from(deduplicated.values());
 }

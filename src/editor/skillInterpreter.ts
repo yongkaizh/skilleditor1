@@ -130,14 +130,32 @@ class SkillInterpreter {
     this.globalEnv.define('printf', (format: string, ...args: any[]) => {
       let str = format || "";
       let argIndex = 0;
-      str = str.replace(/%[-+0-9.]*[sfdgc]/g, (match) => {
+      str = str.replace(/%[-+0-9.]*[sfdgcL]/g, (match) => {
           if (argIndex < args.length) {
-             return String(args[argIndex++]);
+             let val = args[argIndex++];
+             let specifier = match[match.length - 1];
+             
+             if (specifier === 'd' || specifier === 'f' || specifier === 'g') {
+                 if (typeof val !== 'number') {
+                     throw new Error(`*Error* printf: format specifier ${match} expects a number, got ${typeof val}`);
+                 }
+             } else if (specifier === 's') {
+                 if (typeof val !== 'string' && typeof val !== 'symbol' && typeof val !== 'boolean') {
+                     throw new Error(`*Error* printf: format specifier ${match} expects a string or symbol, got ${typeof val}`);
+                 }
+             } else if (specifier === 'L') {
+                 if (val !== null && typeof val !== 'object' && typeof val !== 'boolean') {
+                     throw new Error(`*Error* printf: format specifier ${match} expects a list, got ${typeof val}`);
+                 }
+                 return typeof val === 'object' ? JSON.stringify(val) : String(val);
+             }
+             
+             return String(val);
           }
           return match;
       });
-      str = str.replace(/\\n/g, '\n');
-      str = str.replace(/\\t/g, '\t');
+      str = str.replace(/\n/g, '\n');
+      str = str.replace(/\t/g, '\t');
       if (this.onOutput) {
           this.onOutput(str);
       }
