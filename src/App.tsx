@@ -213,8 +213,15 @@ function App() {
 
       // 1. Close active panel or find/replace widget on Escape
       if (e.key === 'Escape') {
+        if (isFindWidgetVisible()) {
+          dismissFindWidget();
+          e.preventDefault();
+          e.stopPropagation();
+          return;
+        }
+
         let closedSomething = false;
-        if (activeTab) {
+        if (activeTab && activeTab !== 'files') {
           setActiveTab(null);
           closedSomething = true;
         }
@@ -239,7 +246,6 @@ function App() {
           closedSomething = true;
         }
         
-        dismissFindWidget();
         if (editorRef.current) {
           editorRef.current.focus();
         }
@@ -322,11 +328,35 @@ function App() {
   const savedTimeout = useRef<any>(null);
   const consoleEndRef = useRef<HTMLDivElement>(null);
 
+  const isFindWidgetVisible = () => {
+    if (editorRef.current) {
+      try {
+        const domNode = editorRef.current.getDomNode();
+        if (domNode) {
+          const widget = domNode.querySelector('.find-widget');
+          if (widget) {
+            return widget.classList.contains('visible');
+          }
+        }
+      } catch {}
+    }
+    return false;
+  };
+
   const dismissFindWidget = () => {
     if (editorRef.current) {
       try {
-        editorRef.current.trigger('keyboard', 'closeFindWidget', null);
-      } catch {}
+        const action = editorRef.current.getAction('closeFindWidget');
+        if (action) {
+          action.run();
+        } else {
+          editorRef.current.trigger('keyboard', 'closeFindWidget', null);
+        }
+      } catch {
+        try {
+          editorRef.current.trigger('keyboard', 'closeFindWidget', null);
+        } catch {}
+      }
       try {
         const findContrib = editorRef.current.getContribution('editor.contrib.findController');
         if (findContrib && typeof findContrib.closeFindWidget === 'function') {
@@ -572,10 +602,17 @@ function App() {
     editor.onKeyDown((e: any) => {
       // 1. Escape key
       if (e.keyCode === monaco.KeyCode.Escape) {
+        if (isFindWidgetVisible()) {
+          dismissFindWidget();
+          e.preventDefault();
+          e.stopPropagation();
+          return;
+        }
+
         const { activeTab, isConsoleOpen, isSettingsOpen, isShortcutsOpen, isGitHubModalOpen, isTourOpen } = stateRef.current;
         let closedSomething = false;
 
-        if (activeTab) {
+        if (activeTab && activeTab !== 'files') {
           setActiveTab(null);
           closedSomething = true;
         }
@@ -599,8 +636,6 @@ function App() {
           setIsTourOpen(false);
           closedSomething = true;
         }
-
-        dismissFindWidget();
 
         if (closedSomething) {
           e.preventDefault();
