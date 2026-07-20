@@ -55,33 +55,7 @@ import { parseManual } from "./editor/manualParser";
 import { skillInterpreter } from "./editor/skillInterpreter";
 import manualRawText from "./data/manual.txt?raw";
 
-const DEFAULT_SKILL = `; Welcome to Cadence SKILL IDE!
-; Click the "Debug" button to step through this script line-by-line,
-; or toggle breakpoints by clicking the gutter area next to the line numbers.
-
-procedure( calculateDensity(metalArea totalArea)
-  let( (density threshold)
-    density = (metalArea * 100.0) / totalArea
-    threshold = 35.0
-    
-    if( density < threshold then
-      printf("Density Warning: %.2f%% is below threshold %.2f%%\\n" density threshold)
-    else
-      printf("Density Optimal: %.2f%%\\n" density)
-    )
-    density
-  )
-)
-
-; Run and test the procedure
-let( (metal total result)
-  metal = 450.0
-  total = 1200.0
-  printf("Analyzing layout density...\\n")
-  result = calculateDensity(metal total)
-  printf("Analysis completed with result: %.2f\\n" result)
-)
-`;
+const DEFAULT_SKILL = ``;
 
 function App() {
   
@@ -1458,7 +1432,7 @@ function App() {
           )}
         </AnimatePresence>
         
-        <div className="flex-1 flex flex-col min-w-0">
+        <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${isDebugOpen ? 'md:mr-72' : ''}`}>
           <section className="flex-1 flex flex-col overflow-hidden bg-[#12141a]">
             <EditorTabs files={files} openFileIds={openFileIds} activeFileId={activeFileId} onTabSelect={handleFileSelect} onTabClose={handleTabClose} />
             <div className="px-6 py-3 text-xs font-semibold text-[#94a3b8] uppercase tracking-wider bg-[#0b0c10] border-b border-white/[0.04] flex items-center justify-between">

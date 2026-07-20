@@ -58,15 +58,17 @@
 }
 
 /* Style the Monaco find and replace widget so it matches the dark workspace theme perfectly */
-.monaco-editor .find-widget {
+.monaco-editor .find-widget,
+.find-widget,
+.monaco-editor .editor-widget.find-widget {
   box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5) !important;
   border: 1px solid rgba(255, 255, 255, 0.1) !important;
   border-radius: 6px !important;
   background-color: #1a1c23 !important;
-  z-index: 9999 !important;
+  z-index: 99999 !important;
 }
 
-/* Ensure that Monaco hovers, tooltips and suggestions have proper z-index and display */
+/* Ensure that Monaco hovers, tooltips, suggestions, and peek/zone windows have proper z-index and display */
 .monaco-editor .monaco-hover,
 .monaco-hover,
 .monaco-editor .editor-widget,
@@ -74,9 +76,11 @@
 .monaco-editor .parameter-hints-widget,
 .monaco-editor .rename-widget,
 .monaco-editor .peekview-widget,
+.monaco-editor .zone-widget,
+.zone-widget,
 .peekview-widget,
 .peekViewWidget,
 .context-view {
-  z-index: 9999 !important;
+  z-index: 99999 !important;
 }
 
