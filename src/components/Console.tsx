@@ -35,8 +35,7 @@ interface ConsoleProps {
   onClose: () => void;
   onCommand?: (command: string) => void;
   onApplyQuickFix?: (action: () => void) => void;
-  onExpertAnalyze?: (msg: ConsoleMessage) => void;
-  onRefactor?: () => void;
+    onRefactor?: () => void;
   isSimulating?: boolean;
 }
 
@@ -46,7 +45,7 @@ export const Console: React.FC<ConsoleProps> = ({
   onClose,
   onCommand,
   onApplyQuickFix,
-  onExpertAnalyze,
+  
   onRefactor,
   isSimulating 
 }) => {
@@ -291,16 +290,6 @@ export const Console: React.FC<ConsoleProps> = ({
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div className="flex-1">{highlightConsoleLine(msg.text)}</div>
                     <div className="flex items-center gap-2">
-                      {msg.type === 'error' && onExpertAnalyze && (
-                        <button
-                          onClick={() => onExpertAnalyze(msg)}
-                          disabled={msg.isExpertAnalyzing}
-                          className="shrink-0 flex items-center gap-1.5 px-2 py-0.5 bg-indigo-500/10 hover:bg-indigo-600/20 text-indigo-400 hover:text-indigo-300 border border-indigo-500/20 rounded text-[10px] font-bold transition-all disabled:opacity-50"
-                        >
-                          {msg.isExpertAnalyzing ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />}
-                          Ask Expert
-                        </button>
-                      )}
                       {msg.quickFix && (
                         <button
                           onClick={() => handleApplyFix(msg.quickFix!.action)}

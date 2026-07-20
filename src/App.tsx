@@ -56,7 +56,7 @@ const DEFAULT_SKILL = ``;
 function App() {
   
   const [files, setFiles] = useState<{id: string, name: string, content: string}[]>([
-    { id: '1', name: 'main.il', content: DEFAULT_SKILL }
+    { id: '1', name: 'skill_script_1.il', content: DEFAULT_SKILL }
   ]);
   const [activeFileId, setActiveFileId] = useState<string>('1');
   const [openFileIds, setOpenFileIds] = useState<string[]>(['1']);
@@ -158,15 +158,15 @@ function App() {
 
 
   const [autoSaveEnabled, setAutoSaveEnabled] = useState<boolean>(() => {
-    const saved = localStorage.getItem("ag-skill-auto-save");
+    const saved = localStorage.getItem("cadence-workspace-auto-save");
     return saved === null ? true : saved === "true";
   });
 
   useEffect(() => {
-    localStorage.setItem("ag-skill-auto-save", autoSaveEnabled.toString());
+    localStorage.setItem("cadence-workspace-auto-save", autoSaveEnabled.toString());
     if (autoSaveEnabled) {
       const timeoutId = setTimeout(() => {
-        set("ag-skill-files", files).catch(console.error);
+        set("cadence-workspace-files", files).catch(console.error);
       }, 500);
       return () => clearTimeout(timeoutId);
     }
@@ -181,7 +181,7 @@ function App() {
       if ((e.ctrlKey || e.metaKey) && e.key === 's') {
         e.preventDefault();
         if (!autoSaveEnabled) {
-          set("ag-skill-files", files).catch(console.error);
+          set("cadence-workspace-files", files).catch(console.error);
           setSaveStatus("saving");
           setTimeout(() => setSaveStatus("saved"), 300);
           setTimeout(() => setSaveStatus("idle"), 2300);
@@ -243,7 +243,7 @@ function App() {
   }, [consoleOutput]);
 
   useEffect(() => {
-    get("ag-skill-files").then((saved) => {
+    get("cadence-workspace-files").then((saved) => {
       if (saved) {
         try {
           const parsed = typeof saved === "string" ? JSON.parse(saved) : saved;
@@ -264,7 +264,7 @@ function App() {
         }
       } else {
         // Fallback migration from localStorage
-        const localSaved = localStorage.getItem("ag-skill-files");
+        const localSaved = localStorage.getItem("cadence-workspace-files");
         if (localSaved) {
           try {
             const parsed = JSON.parse(localSaved);
@@ -278,7 +278,7 @@ function App() {
               });
               setFiles(migrated);
               handleFileSelect(migrated[0].id);
-              set("ag-skill-files", migrated);
+              set("cadence-workspace-files", migrated);
             }
 
           } catch (e) {
@@ -687,50 +687,7 @@ function App() {
     }
   };
 
-  const handleExpertAnalyze = async (msg: ConsoleMessage) => {
-    const getTimestamp = () => new Date().toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    
-    // Set loading state for this message
-    setConsoleOutput(prev => prev.map(m => m.id === msg.id ? { ...m, isExpertAnalyzing: true } : m));
-
-    try {
-      const response = await fetch("/api/expert/analyze", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          error: msg.text,
-          code: content,
-          context: "User is working in the Cadence SKILL IDE."
-        }),
-      });
-
-      const data = await response.json();
-      
-      if (data.error) throw new Error(data.error);
-
-      setConsoleOutput(prev => [
-        ...prev.map(m => m.id === msg.id ? { ...m, isExpertAnalyzing: false } : m),
-        { 
-          id: uuidv4(), 
-          timestamp: getTimestamp(), 
-          type: "info", 
-          text: `*** EXPERT ANALYSIS ***\n\n${data.analysis}` 
-        }
-      ]);
-    } catch (err: any) {
-      setConsoleOutput(prev => [
-        ...prev.map(m => m.id === msg.id ? { ...m, isExpertAnalyzing: false } : m),
-        { 
-          id: uuidv4(), 
-          timestamp: getTimestamp(), 
-          type: "error", 
-          text: `Expert Analysis Failed: ${err.message}` 
-        }
-      ]);
-    }
-  };
-
-  const handleRefactorCode = () => {
+    const handleRefactorCode = () => {
     if (!content) return;
     const result = refactorSkillCode(content);
     if (result.code === content) {
@@ -1008,7 +965,7 @@ function App() {
 
           {isConsoleOpen && (
             <div className="h-64 flex flex-col min-w-0 border-t border-white/[0.04]">
-              <Console messages={consoleOutput} onClear={() => setConsoleOutput([])} onClose={() => setIsConsoleOpen(false)} onApplyQuickFix={handleApplyQuickFix} onCommand={handleConsoleCommand} onExpertAnalyze={handleExpertAnalyze} onRefactor={handleRefactorCode} isSimulating={isSimulating} />
+              <Console messages={consoleOutput} onClear={() => setConsoleOutput([])} onClose={() => setIsConsoleOpen(false)} onApplyQuickFix={handleApplyQuickFix} onCommand={handleConsoleCommand}  onRefactor={handleRefactorCode} isSimulating={isSimulating} />
             </div>
           )}
         </div>

@@ -108,7 +108,7 @@ export function configureMonaco(monaco: Monaco, manualFunctions: SkillFunction[]
       { token: 'brackets', foreground: '94a3b8' },
     ],
     colors: {
-      'editor.background': '#0b0c10',
+      'editor.background': '#12141a',
       'editor.foreground': '#e2e8f0',
       'editor.lineHighlightBackground': '#1e293b44',
       'editorCursor.foreground': '#818cf8',
@@ -120,6 +120,7 @@ export function configureMonaco(monaco: Monaco, manualFunctions: SkillFunction[]
       'editorSuggestWidget.border': '#1e293b',
       'editorSuggestWidget.selectedBackground': '#1e293b',
       'editorSuggestWidget.highlightForeground': '#818cf8',
+      'minimap.background': '#12141a',
     }
   });
 

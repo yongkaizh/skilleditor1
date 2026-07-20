@@ -15,6 +15,44 @@ A modern, web-based IDE designed specifically for writing Cadence SKILL and SKIL
 
 ## 📁 App Structure
 
+### 🏛️ Architecture Overview
+
+Here is a high-level view of how the Cadence SKILL Web Editor components interact:
+
+```text
++-------------------------------------------------------------+
+|                     Main Application (App.tsx)              |
+|                                                             |
+|  +--------------------+  +-------------------------------+  |
+|  |     Sidebars       |  |          Editor Pane          |  |
+|  |                    |  |                               |  |
+|  | - File Explorer    |  |  +-------------------------+  |  |
+|  | - Code Outline     |<--->|      Monaco Editor      |  |  |
+|  | - Search           |  |  +-------------------------+  |  |
+|  | - Cheatsheet       |  |               ^               |  |
+|  | - Templates        |  |               |               |  |
+|  +--------------------+  +---------------+---------------+  |
+|                                          |                  |
++------------------------------------------|------------------+
+                                           |
++------------------------------------------v------------------+
+|                  Editor Core & Language Services            |
+|                                                             |
+|  +-----------------+   +------------------+   +----------+  |
+|  | monaco-config.ts|   | refactorEngine.ts|   | Linter   |  |
+|  | (Theme/Tokens)  |   | (Code Optimizer) |   | (Syntax) |  |
+|  +--------^--------+   +------------------+   +----------+  |
+|           |                                                 |
+|  +--------v--------+                                        |
+|  | manualParser.ts |<--------- Reads --------- manual.txt   |
+|  | (Docs/Hover)    |                           (DB/API)     |
+|  +-----------------+                                        |
++-------------------------------------------------------------+
+|                    Browser Local Storage                    |
+|                (Saves files, auto-save state)               |
++-------------------------------------------------------------+
+```
+
 This application is modularly structured to ensure maintainability and separation of concerns:
 
 - `src/components/`: Contains all React UI components.
