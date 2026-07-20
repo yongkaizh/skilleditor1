@@ -66,6 +66,7 @@
   border-radius: 6px !important;
   background-color: #1a1c23 !important;
   z-index: 99999 !important;
+  overflow: visible !important; /* Allow tooltips and hover info to pop out! */
 }
 
 /* Ensure that Monaco hovers, tooltips, suggestions, and peek/zone windows have proper z-index and display */
@@ -80,7 +81,11 @@
 .zone-widget,
 .peekview-widget,
 .peekViewWidget,
-.context-view {
-  z-index: 99999 !important;
+.context-view,
+.monaco-tooltip,
+.monaco-editor .monaco-tooltip,
+.monaco-tooltip-content,
+.tooltip {
+  z-index: 100000 !important;
 }
 
