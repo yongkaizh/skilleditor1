@@ -813,6 +813,48 @@ function App() {
     }, 100);
   };
 
+  const createPauseHandler = () => {
+    return async (line: number) => {
+      setIsDebugOpen(true);
+      setIsPaused(true);
+      setCurrentDebugLine(line);
+      setDebugVariables(skillInterpreter.getVariables());
+      
+      // Add highlighting to the editor
+      if (editorRef.current && monacoRef.current) {
+        editorRef.current.debugDecorationIds = editorRef.current.deltaDecorations(
+          editorRef.current.debugDecorationIds || [],
+          [
+            {
+              range: new monacoRef.current.Range(line, 1, line, 1),
+              options: {
+                isWholeLine: true,
+                className: 'debug-line-highlight',
+                glyphMarginClassName: 'breakpoint-margin' // Keep breakpoint icon visible
+              }
+            }
+          ]
+        );
+        editorRef.current.revealLineInCenter(line);
+      }
+
+      return new Promise<void>(resolve => {
+        debugResolver.current = () => {
+          setIsPaused(false);
+          setCurrentDebugLine(null);
+          // Clear debug highlight
+          if (editorRef.current) {
+            editorRef.current.debugDecorationIds = editorRef.current.deltaDecorations(
+              editorRef.current.debugDecorationIds || [],
+              []
+            );
+          }
+          resolve();
+        };
+      });
+    };
+  };
+
   const handleRun = async (debugMode = false) => {
     if (isSimulating) return;
     const getTimestamp = () => new Date().toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
@@ -837,45 +879,8 @@ function App() {
       
       const result = await skillInterpreter.evaluate(
         content, 
-        debugMode ? currentBreakpoints : new Set(),
-        async (line) => {
-          setIsPaused(true);
-          setCurrentDebugLine(line);
-          setDebugVariables(skillInterpreter.getVariables());
-          
-          // Add highlighting to the editor
-          if (editorRef.current) {
-            editorRef.current.debugDecorationIds = editorRef.current.deltaDecorations(
-              editorRef.current.debugDecorationIds || [],
-              [
-                {
-                  range: new monacoRef.current.Range(line, 1, line, 1),
-                  options: {
-                    isWholeLine: true,
-                    className: 'debug-line-highlight',
-                    glyphMarginClassName: 'breakpoint-margin' // Keep breakpoint icon visible
-                  }
-                }
-              ]
-            );
-            editorRef.current.revealLineInCenter(line);
-          }
-
-          return new Promise<void>(resolve => {
-            debugResolver.current = () => {
-              setIsPaused(false);
-              setCurrentDebugLine(null);
-              // Clear debug highlight
-              if (editorRef.current) {
-                editorRef.current.debugDecorationIds = editorRef.current.deltaDecorations(
-                  editorRef.current.debugDecorationIds || [],
-                  []
-                );
-              }
-              resolve();
-            };
-          });
-        }
+        currentBreakpoints, // Always pass active breakpoints so they stop even on standard 'Run'
+        createPauseHandler()
       );
       
       if (editorRef.current) {
@@ -1063,8 +1068,13 @@ function App() {
         text: "System: Cadence Virtuoso SKILL Online\nStatus: Connected\nFiles: " + files.length + "\nEnvironment: Production (Cloud Native)" 
       }]);
     } else {
-      // Real evaluation using interpreter
-      const result = await skillInterpreter.evaluate(command);
+      // Real evaluation using interpreter with breakpoint support
+      const currentBreakpoints = activeFile ? (breakpoints.get(activeFile.name) || new Set()) : new Set();
+      const result = await skillInterpreter.evaluate(
+        command,
+        currentBreakpoints,
+        createPauseHandler()
+      );
       if (result.type === 'success') {
         setConsoleOutput(prev => [...prev, { 
           id: uuidv4(), 

@@ -68,13 +68,35 @@ class SkillInterpreter {
   private isStepMode: boolean = false;
   private breakpoints: Set<number> = new Set();
   private onPause?: (line: number) => Promise<void>;
+  private currentEnv?: Environment;
 
   constructor() {
     this.initBuiltins();
   }
 
   public getVariables() {
-    return Object.fromEntries(this.globalEnv.vars);
+    const allVars: Record<string, any> = {};
+    let env = this.currentEnv || this.globalEnv;
+    
+    const envChain: Environment[] = [];
+    while (env) {
+      envChain.push(env);
+      env = env.parent!;
+    }
+    
+    for (let i = envChain.length - 1; i >= 0; i--) {
+      const e = envChain[i];
+      for (const [key, value] of e.vars.entries()) {
+        if (value && typeof value === 'object' && value.type === 'procedure') {
+          continue;
+        }
+        if (typeof value === 'function') {
+          continue;
+        }
+        allVars[key] = value;
+      }
+    }
+    return allVars;
   }
 
   public setStepMode(active: boolean) {
@@ -295,6 +317,7 @@ class SkillInterpreter {
     const output: string[] = [];
     this.breakpoints = breakpoints;
     this.onPause = onPause;
+    this.currentEnv = undefined;
     
     const oldOutput = this.onOutput;
     this.onOutput = (text) => {
@@ -523,9 +546,10 @@ class SkillInterpreter {
       return this.processInfix(exprs);
   }
 
-  private async checkBreakpoint(line: number) {
+  private async checkBreakpoint(line: number, env?: Environment) {
       if (this.breakpoints.has(line) || this.isStepMode) {
           this.isStepMode = false;
+          this.currentEnv = env;
           if (this.onPause) {
               await this.onPause(line);
           }
@@ -536,7 +560,7 @@ class SkillInterpreter {
       let lastVal = null;
       for (let i = 0; i < exprs.length; i++) {
           let expr = exprs[i];
-          await this.checkBreakpoint(expr.line);
+          await this.checkBreakpoint(expr.line, env);
           lastVal = await this.evaluateExpr(expr, env);
       }
       return lastVal;
@@ -605,7 +629,7 @@ private async _evaluateExpr(expr: ASTNode, env: Environment): Promise<any> {
   }
 
   private async evaluateCall(fnName: string, args: ASTNode[], env: Environment, line: number): Promise<any> {
-      await this.checkBreakpoint(line);
+      await this.checkBreakpoint(line, env);
 
       if (fnName === 'procedure' || fnName === 'defun') {
           let sig = args[0];

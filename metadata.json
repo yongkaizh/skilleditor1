@@ -1,5 +1,5 @@
 {
   "name": "Cadence SKILL Editor",
-  "description": "An interactive IDE for Cadence SKILL scripting with linter, documentation lookup, and AI expert analysis.",
+  "description": "An interactive, feature-rich web IDE and live AST interpreter for Cadence SKILL and SKILL++ scripting, complete with breakpoint debugging, advanced linting, and AI helper utilities.",
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

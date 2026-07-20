@@ -348,6 +348,10 @@ export const Console: React.FC<ConsoleProps> = ({
           onChange={(e) => setCommandInput(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="Type SKILL command or 'help'..."
+          spellCheck={false}
+          autoComplete="off"
+          autoCorrect="off"
+          autoCapitalize="off"
           className="flex-1 bg-transparent border-none outline-none text-[12px] font-mono text-slate-200 placeholder:text-slate-600"
         />
         <div className="flex items-center gap-3 text-[10px] text-slate-500 font-medium select-none">
