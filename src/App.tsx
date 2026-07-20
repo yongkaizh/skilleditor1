@@ -53,8 +53,6 @@ import { challenges } from "./data/challenges";
 import { projectState } from "./editor/projectState";
 import { parseManual } from "./editor/manualParser";
 import { skillInterpreter } from "./editor/skillInterpreter";
-import { refactorSkillCode, type RefactorResult } from "./editor/refactorEngine";
-import { RefactorDiffView } from "./components/RefactorDiffView";
 import manualRawText from "./data/manual.txt?raw";
 
 const DEFAULT_SKILL = ``;
@@ -312,7 +310,6 @@ function App() {
   }, [aiProvider]);
 
   const [isSimulating, setIsSimulating] = useState(false);
-  const [proposedRefactor, setProposedRefactor] = useState<RefactorResult | null>(null);
 
   useEffect(() => {
     const hasSeenTour = localStorage.getItem('skill_editor_tour_seen');
@@ -909,7 +906,9 @@ function App() {
         }]);
       }
       setIsSimulating(false);
-      setIsDebugOpen(false);
+      setIsPaused(false);
+      setCurrentDebugLine(null);
+      setDebugVariables(skillInterpreter.getVariables());
       showToast("Execution complete");
     }, 400);
   };
@@ -1138,43 +1137,6 @@ function App() {
       setConsoleOutput(prev => prev.map(m => m.id === msg.id ? { ...m, isExpertAnalyzing: false } : m));
       showToast(err.message || "Expert analysis failed");
     }
-  };
-
-    const handleRefactorCode = () => {
-    if (!content) return;
-    const result = refactorSkillCode(content);
-    if (result.code === content) {
-      showToast("Code is already optimized");
-      return;
-    }
-    setProposedRefactor(result);
-  };
-
-  const handleAcceptRefactor = () => {
-    if (!proposedRefactor) return;
-    
-    if (editorRef.current) {
-      editorRef.current.pushUndoStop();
-      editorRef.current.executeEdits("refactor", [
-        {
-          range: editorRef.current.getModel()!.getFullModelRange(),
-          text: proposedRefactor.code,
-        },
-      ]);
-      editorRef.current.pushUndoStop();
-    } else {
-      setContent(proposedRefactor.code);
-    }
-    
-    setConsoleOutput(prev => [...prev, { 
-      id: uuidv4(), 
-      timestamp: new Date().toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }), 
-      type: "success", 
-      text: "Expert Refactor Applied: Code optimized for Cadence design patterns." 
-    }]);
-    
-    showToast("Expert refactor applied");
-    setProposedRefactor(null);
   };
 
   const handleApplyQuickFix = (action: () => void) => {
@@ -1509,10 +1471,6 @@ function App() {
                   <Bug size={14} />
                   <span className="hidden sm:inline">Debug</span>
                 </button>
-                <button onClick={handleRefactorCode} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-violet-500/10 hover:bg-violet-500/20 text-violet-400 hover:text-violet-300 border border-violet-500/20 transition-all text-[11px] font-bold tracking-wider uppercase">
-                  <Sparkles size={14} />
-                  <span className="hidden sm:inline">Refactor</span>
-                </button>
                 
                 {challenges.find(c => activeFile?.name === `${c.id}.il` || activeFile?.name === `${c.id}-sol.il`)?.verificationCall && (
                   <button onClick={handleVerify} disabled={isSimulating} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all text-[11px] font-bold tracking-wider uppercase border ${isSimulating ? 'bg-amber-500/10 text-amber-500/50 border-amber-500/10 cursor-not-allowed' : 'bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 border-amber-500/20 shadow-amber-500/10 hover:shadow-amber-500/20 shadow-lg'}`}>
@@ -1575,18 +1533,6 @@ function App() {
       </footer>
 
       <AnimatePresence>
-        {proposedRefactor && (
-          <RefactorDiffView 
-            originalCode={content}
-            modifiedCode={proposedRefactor.code}
-            explanations={proposedRefactor.explanations}
-            onAccept={handleAcceptRefactor}
-            onCancel={() => setProposedRefactor(null)}
-          />
-        )}
-      </AnimatePresence>
-
-       <AnimatePresence>
         {isDebugOpen && (
           <Debugger 
             isOpen={isDebugOpen}
@@ -1597,6 +1543,7 @@ function App() {
             onContinue={handleContinue}
             onStep={handleStep}
             onStop={handleStop}
+            isSimulating={isSimulating}
           />
         )}
       </AnimatePresence>

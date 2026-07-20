@@ -23,6 +23,7 @@ interface DebuggerProps {
   onContinue: () => void;
   onStep: () => void;
   onStop: () => void;
+  isSimulating?: boolean;
 }
 
 export const Debugger: React.FC<DebuggerProps> = ({
@@ -33,7 +34,8 @@ export const Debugger: React.FC<DebuggerProps> = ({
   variables,
   onContinue,
   onStep,
-  onStop
+  onStop,
+  isSimulating = false
 }) => {
   const [watchVars, setWatchVars] = useState<string[]>([]);
   const [newWatch, setNewWatch] = useState("");
@@ -95,11 +97,25 @@ export const Debugger: React.FC<DebuggerProps> = ({
         </button>
       </div>
 
-      {isPaused && (
+      {isPaused ? (
         <div className="px-4 py-2 bg-amber-500/10 border-b border-amber-500/20 flex items-center gap-2">
           <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
           <span className="text-[10px] font-bold text-amber-500 uppercase tracking-tighter">
             Paused at line {currentLine}
+          </span>
+        </div>
+      ) : isSimulating ? (
+        <div className="px-4 py-2 bg-indigo-500/10 border-b border-indigo-500/20 flex items-center gap-2">
+          <div className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
+          <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-tighter">
+            Executing...
+          </span>
+        </div>
+      ) : (
+        <div className="px-4 py-2 bg-emerald-500/10 border-b border-emerald-500/20 flex items-center gap-2">
+          <div className="w-2 h-2 rounded-full bg-emerald-500" />
+          <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-tighter">
+            Execution Complete
           </span>
         </div>
       )}
