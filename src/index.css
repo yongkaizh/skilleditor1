@@ -39,12 +39,11 @@
 }
 
 .breakpoint-margin {
-  width: 10px !important;
-  height: 10px !important;
-  background-color: #ef4444;
-  border-radius: 50%;
-  margin-left: 5px;
-  cursor: pointer;
+  background-color: #ef4444 !important;
+  border-radius: 50% !important;
+  cursor: pointer !important;
+  transform: scale(0.5);
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.8) !important;
 }
 
 .debug-line-highlight {

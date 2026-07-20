@@ -34,6 +34,7 @@ export const EditorPane: React.FC<EditorPaneProps> = ({
 }) => {
   const monaco = useMonaco();
   const editorRef = React.useRef<any>(null);
+  const [editorInstance, setEditorInstance] = React.useState<any>(null);
 
   React.useEffect(() => {
     if (monaco) {
@@ -343,20 +344,20 @@ export const EditorPane: React.FC<EditorPaneProps> = ({
           }
         }));
         
-        if (editorRef.current) {
-           if (!editorRef.current.decorationIds) {
-             editorRef.current.decorationIds = [];
+        if (editorInstance) {
+           if (!editorInstance.decorationIds) {
+             editorInstance.decorationIds = [];
            }
-           editorRef.current.decorationIds = editorRef.current.deltaDecorations(editorRef.current.decorationIds, decs);
+           editorInstance.decorationIds = editorInstance.deltaDecorations(editorInstance.decorationIds, decs);
         }
       }
     }, 500); // 500ms debounce
     return () => clearTimeout(timeout);
-  }, [monaco, value, manualFns, activeFileName]);
+  }, [monaco, value, manualFns, activeFileName, editorInstance]);
 
   // Handle breakpoint decorations instantly
   React.useEffect(() => {
-    if (!monaco || !editorRef.current) return;
+    if (!monaco || !editorInstance) return;
 
     const breakpointDecs: any[] = breakpoints.map(line => ({
       range: new monaco.Range(line, 1, line, 1),
@@ -367,11 +368,11 @@ export const EditorPane: React.FC<EditorPaneProps> = ({
       }
     }));
 
-    if (!editorRef.current.breakpointDecorationIds) {
-      editorRef.current.breakpointDecorationIds = [];
+    if (!editorInstance.breakpointDecorationIds) {
+      editorInstance.breakpointDecorationIds = [];
     }
-    editorRef.current.breakpointDecorationIds = editorRef.current.deltaDecorations(editorRef.current.breakpointDecorationIds, breakpointDecs);
-  }, [monaco, breakpoints]);
+    editorInstance.breakpointDecorationIds = editorInstance.deltaDecorations(editorInstance.breakpointDecorationIds, breakpointDecs);
+  }, [monaco, breakpoints, editorInstance]);
 
   return (
     <div className="h-full w-full">
@@ -384,6 +385,7 @@ export const EditorPane: React.FC<EditorPaneProps> = ({
         onChange={onChange}
         onMount={(editor, m) => {
           editorRef.current = editor;
+          setEditorInstance(editor);
           
           // Intercept navigation for "Jump to Definition"
           const editorService = (editor as any)._codeEditorService;
@@ -402,9 +404,13 @@ export const EditorPane: React.FC<EditorPaneProps> = ({
 
           // Handle gutter click for breakpoints
           editor.onMouseDown((e: any) => {
-            if (e.target.type === 2) { // 2 is GLYPH_MARGIN
-              const line = e.target.position.lineNumber;
-              if (onBreakpointToggle) onBreakpointToggle(line);
+            const targetType = e.target.type;
+            const GLYPH_MARGIN = m ? m.editor.MouseTargetType.GUTTER_GLYPH_MARGIN : 2;
+            if (targetType === GLYPH_MARGIN || targetType === 2) {
+              const line = e.target.position?.lineNumber;
+              if (line && onBreakpointToggle) {
+                onBreakpointToggle(line);
+              }
             }
           });
         }}

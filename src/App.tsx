@@ -845,16 +845,19 @@ function App() {
           
           // Add highlighting to the editor
           if (editorRef.current) {
-            editorRef.current.deltaDecorations([], [
-              {
-                range: new monacoRef.current.Range(line, 1, line, 1),
-                options: {
-                  isWholeLine: true,
-                  className: 'debug-line-highlight',
-                  glyphMarginClassName: 'breakpoint-margin' // Keep breakpoint icon visible
+            editorRef.current.debugDecorationIds = editorRef.current.deltaDecorations(
+              editorRef.current.debugDecorationIds || [],
+              [
+                {
+                  range: new monacoRef.current.Range(line, 1, line, 1),
+                  options: {
+                    isWholeLine: true,
+                    className: 'debug-line-highlight',
+                    glyphMarginClassName: 'breakpoint-margin' // Keep breakpoint icon visible
+                  }
                 }
-              }
-            ]);
+              ]
+            );
             editorRef.current.revealLineInCenter(line);
           }
 
@@ -864,10 +867,8 @@ function App() {
               setCurrentDebugLine(null);
               // Clear debug highlight
               if (editorRef.current) {
-                editorRef.current.deltaDecorations(
-                  editorRef.current.getModel().getAllDecorations()
-                    .filter((d: any) => d.options.className === 'debug-line-highlight')
-                    .map((d: any) => d.id),
+                editorRef.current.debugDecorationIds = editorRef.current.deltaDecorations(
+                  editorRef.current.debugDecorationIds || [],
                   []
                 );
               }
@@ -877,6 +878,13 @@ function App() {
         }
       );
       
+      if (editorRef.current) {
+        editorRef.current.debugDecorationIds = editorRef.current.deltaDecorations(
+          editorRef.current.debugDecorationIds || [],
+          []
+        );
+      }
+
       if (result.type === 'success') {
         setConsoleOutput(prev => [...prev, { 
           id: uuidv4(), 
@@ -919,6 +927,12 @@ function App() {
     setIsPaused(false);
     handleContinue();
     setIsSimulating(false);
+    if (editorRef.current) {
+      editorRef.current.debugDecorationIds = editorRef.current.deltaDecorations(
+        editorRef.current.debugDecorationIds || [],
+        []
+      );
+    }
   };
 
   const handleBreakpointToggle = (line: number) => {
