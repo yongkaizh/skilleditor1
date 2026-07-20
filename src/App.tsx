@@ -218,6 +218,7 @@ function App() {
   };
   const [isConsoleOpen, setIsConsoleOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
   const [consoleOutput, setConsoleOutput] = useState<ConsoleMessage[]>([]);
   const [isTourOpen, setIsTourOpen] = useState(false);
 
@@ -472,18 +473,22 @@ function App() {
     showToast(`Challenge "${challenge.title}" ${isSolution ? 'Solution' : ''} initialized!`);
   };
 
-    const handleDownload = async () => {
-    if (files.length === 1) {
-      const blob = new Blob([files[0].content], { type: "text/plain" });
-      saveAs(blob, files[0].name);
-    } else {
-      const zip = new JSZip();
-      files.forEach(f => {
-        zip.file(f.name, f.content);
-      });
-      const content = await zip.generateAsync({ type: "blob" });
-      saveAs(content, "skill_project.zip");
-    }
+    const handleDownloadCurrent = () => {
+    const activeF = files.find(f => f.id === activeFileId);
+    if (!activeF) return;
+    const blob = new Blob([activeF.content], { type: "text/plain" });
+    saveAs(blob, activeF.name);
+    setIsExportMenuOpen(false);
+  };
+
+  const handleDownloadProject = async () => {
+    const zip = new JSZip();
+    files.forEach(f => {
+      zip.file(f.name, f.content);
+    });
+    const content = await zip.generateAsync({ type: "blob" });
+    saveAs(content, "skill_project.zip");
+    setIsExportMenuOpen(false);
   };
 
   const handleCopy = () => {
@@ -911,13 +916,40 @@ function App() {
             <Settings size={16} className="text-slate-400" />
             <span className="hidden md:inline">Settings</span>
           </button>
-          <button 
-            onClick={handleDownload}
-            className="flex items-center gap-2 text-slate-300 hover:text-white hover:bg-white/5 px-2.5 py-1.5 rounded-lg text-sm font-medium transition-colors"
-          >
-            <FileArchive size={16} className="text-amber-400" />
-            <span className="hidden md:inline">Export</span>
-          </button>
+          <div className="relative">
+            <button 
+              onClick={() => setIsExportMenuOpen(!isExportMenuOpen)}
+              className="flex items-center gap-2 text-slate-300 hover:text-white hover:bg-white/5 px-2.5 py-1.5 rounded-lg text-sm font-medium transition-colors"
+            >
+              <FileArchive size={16} className="text-amber-400" />
+              <span className="hidden md:inline">Export</span>
+            </button>
+            
+            <AnimatePresence>
+              {isExportMenuOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: 8, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 8, scale: 0.95 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute right-0 top-full mt-2 w-48 bg-[#12141a] border border-white/10 rounded-xl shadow-xl overflow-hidden z-50 flex flex-col p-1"
+                >
+                  <button
+                    onClick={handleDownloadCurrent}
+                    className="flex flex-col text-left text-slate-300 hover:text-white hover:bg-white/5 px-3 py-2 rounded-lg text-sm font-medium transition-colors w-full"
+                  >
+                    <span>Current File (.il)</span>
+                  </button>
+                  <button
+                    onClick={handleDownloadProject}
+                    className="flex flex-col text-left text-slate-300 hover:text-white hover:bg-white/5 px-3 py-2 rounded-lg text-sm font-medium transition-colors w-full"
+                  >
+                    <span>Project ZIP (.zip)</span>
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
           <button 
             onClick={handleCopy}
             className="flex items-center gap-2 text-slate-300 hover:text-white hover:bg-white/5 px-2.5 py-1.5 rounded-lg text-sm font-medium transition-colors"
