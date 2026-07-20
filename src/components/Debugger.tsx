@@ -10,7 +10,8 @@ import {
   Type,
   Eye,
   Plus,
-  X
+  X,
+  HelpCircle
 } from 'lucide-react';
 import { motion } from 'motion/react';
 
@@ -39,6 +40,7 @@ export const Debugger: React.FC<DebuggerProps> = ({
 }) => {
   const [watchVars, setWatchVars] = useState<string[]>([]);
   const [newWatch, setNewWatch] = useState("");
+  const [showGuide, setShowGuide] = useState(true);
 
   if (!isOpen) return null;
 
@@ -218,6 +220,39 @@ export const Debugger: React.FC<DebuggerProps> = ({
               ))
             )}
           </div>
+        </div>
+
+        {/* Quick Guide Section */}
+        <div className="flex flex-col border-t border-white/[0.03]">
+          <button 
+            type="button"
+            onClick={() => setShowGuide(!showGuide)}
+            className="px-4 py-2 flex items-center justify-between text-slate-500 hover:text-slate-300 transition-colors bg-white/[0.01] border-b border-white/[0.03]"
+          >
+            <div className="flex items-center gap-2">
+              <HelpCircle size={12} />
+              <span className="text-[10px] font-bold uppercase tracking-widest">Quick Guide</span>
+            </div>
+            <ChevronRight size={10} className={`transform transition-transform text-slate-500 ${showGuide ? 'rotate-90' : ''}`} />
+          </button>
+          
+          {showGuide && (
+            <div className="p-3 bg-white/[0.01] space-y-2">
+              <p className="text-[10.5px] text-slate-400 leading-relaxed">
+                Toggle breakpoints by clicking the margin left of any line number in the editor.
+              </p>
+              <div className="grid grid-cols-2 gap-1.5 text-[10px] font-mono text-slate-500">
+                <div className="flex flex-col p-1.5 bg-[#12141a] rounded border border-white/5">
+                  <span className="text-amber-400 font-bold mb-0.5">Step Over</span>
+                  <span>Executes current line and stops at next expression.</span>
+                </div>
+                <div className="flex flex-col p-1.5 bg-[#12141a] rounded border border-white/5">
+                  <span className="text-emerald-400 font-bold mb-0.5">Continue</span>
+                  <span>Runs until next breakpoint or complete.</span>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
