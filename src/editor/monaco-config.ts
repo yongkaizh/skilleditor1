@@ -392,7 +392,8 @@ export function configureMonaco(monaco: Monaco, manualFunctions: SkillFunction[]
         let insertSnippet = fn.name + '()';
         if (argsMatch && argsMatch[1].trim() !== '') {
           // Create placeholder arguments: dbOpenCellViewByType(${1:cvId})
-          const args = argsMatch[1].trim().split(/\s+/).map((arg: string, i: number) => `\${${i+1}:${arg}}`).join(' ');
+          let cleanedArgs = argsMatch[1].trim().replace(/\[/g, '').replace(/\]/g, '').replace(/\.\.\./g, 'rest');
+          const args = cleanedArgs.split(/\s+/).filter((a: string) => a !== '').map((arg: string, i: number) => `\${${i+1}:${arg}}`).join(' ');
           insertSnippet = `${fn.name}(${args})`;
         }
 
