@@ -864,6 +864,7 @@ function App() {
     
     if (debugMode) {
       setIsDebugOpen(true);
+      skillInterpreter.setStepMode(true);
     }
 
     setConsoleOutput(prev => [...prev, { 
