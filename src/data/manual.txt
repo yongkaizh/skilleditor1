@@ -3647,5 +3647,62 @@ if(port then
 @usage rexMagic(b_magic)
 @category String
 @desc Enables or disables regular expression magic characters.
-`,$9=`/app/applet/src/App.tsx`,OZe=`
+
+@function dbPointInBBox
+@usage dbPointInBBox(l_point l_bBox)
+@category Database Access
+@parameters
+l_point: Point coordinates list (e.g. 5.0:2.5).
+l_bBox: Bounding box list of two coordinate points (e.g. list(0:0 10:10)).
+@example
+dbPointInBBox(2:3 list(0:0 5:5)) ; Returns t
+dbPointInBBox(6:1 list(0:0 5:5)) ; Returns nil
+@desc Checks if a coordinate point list is located inside the boundary limits of a layout bounding box.
+
+@function dbCreatePathSeg
+@usage dbCreatePathSeg(cvId layer p1 p2 width [t_beginExt] [t_endExt])
+@category Database Access
+@parameters
+cvId: The database ID of the cellview.
+layer: List containing the layer name and purpose (e.g., list("M1" "drawing")).
+p1: Start point coordinate of the path segment.
+p2: End point coordinate of the path segment.
+width: Float value specifying the path segment width.
+t_beginExt: Optional extension type at the start ("truncate", "extend", "round").
+t_endExt: Optional extension type at the end ("truncate", "extend", "round").
+@example
+dbCreatePathSeg(cv list("M1" "drawing") 0:0 10:0 0.5 "extend" "extend")
+@desc Creates a single path segment shape with specific begin and end extensions in the destination cellview.
+
+@function dbTransformBBox
+@usage dbTransformBBox(l_bBox l_transform)
+@category Database Access
+@parameters
+l_bBox: Bounding box list to transform.
+l_transform: Transformation list (e.g. list(origin orientation)).
+@example
+dbTransformBBox(list(0:0 2:2) list(10:20 "R90")) ; Returns transformed bBox
+@desc Translates and rotates a bounding box based on a standard hierarchical transformation list.
+
+@function dbMoveObject
+@usage dbMoveObject(d_obj cvId l_transform)
+@category Database Access
+@parameters
+d_obj: The database ID of the object/shape to move.
+cvId: Target cellview ID.
+l_transform: Transformation list (e.g. list(deltaX:deltaY orientation)).
+@example
+dbMoveObject(rect cv list(5:10 "R0"))
+@desc Moves an existing database shape or instance to a new coordinate location or orientation.
+
+@function dbCopyObject
+@usage dbCopyObject(d_obj cvId l_transform)
+@category Database Access
+@parameters
+d_obj: The database ID of the object/shape to copy.
+cvId: Target cellview ID.
+l_transform: Transformation list (e.g. list(deltaX:deltaY orientation)).
+@example
+newRect = dbCopyObject(rect cv list(0:10 "R0"))
+@desc Copies an existing database shape or instance to a new location, returning the new object's database ID.
 

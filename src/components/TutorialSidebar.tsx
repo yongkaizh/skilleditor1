@@ -10,6 +10,13 @@ interface TutorialSidebarProps {
   onInsertCode?: (code: string) => void;
 }
 
+export interface QuizOption {
+  question: string;
+  options: string[];
+  answerIndex: number;
+  explanation: string;
+}
+
 export interface Lesson {
   id: number;
   title: string;
@@ -20,6 +27,7 @@ export interface Lesson {
   startHint?: string;
   validation: (text: string) => boolean;
   explanation: string;
+  quiz?: QuizOption;
 }
 
 const LESSONS: Lesson[] = [
@@ -32,7 +40,13 @@ const LESSONS: Lesson[] = [
     instructions: 'Welcome! SKILL is a Lisp-based language used to automate Electronic Design Automation (EDA) tools like Virtuoso. Let\'s start simple. Use the `printf` function to output a greeting.',
     hint: 'printf("Hello World\\n")',
     validation: (text: string) => /printf\s*\(\s*"Hello World(?:\\\\n|\\n)"\s*\)/.test(text),
-    explanation: 'The \\n character adds a new line so subsequent console outputs don\'t jumble together.'
+    explanation: 'The \\n character adds a new line so subsequent console outputs don\'t jumble together.',
+    quiz: {
+      question: "Which function is used in SKILL to print formatted output to the console?",
+      options: ["printf", "printLine", "echo", "cout"],
+      answerIndex: 0,
+      explanation: "printf prints formatted text. println and print are also available, but printf supports standard %-formatting styles like %s and %d."
+    }
   },
   {
     id: 2,
@@ -42,7 +56,13 @@ const LESSONS: Lesson[] = [
     instructions: 'In Lisp, isolating variables is crucial so you don\'t accidentally overwrite global states. The `let` construct creates a safe, isolated local scope. Declare a local variable `width` inside a `let` block and assign it 5.0.',
     hint: 'let( (width)\n  width = 5.0\n)',
     validation: (text: string) => /let\s*\(\s*\(\s*width\s*\)\s*width\s*=\s*\d+/.test(text) || /let\s*\(\s*\(\s*[a-zA-Z_]\w*\s*\)/.test(text),
-    explanation: 'The list `(width)` defines variables that exist solely inside this scope.'
+    explanation: 'The list `(width)` defines variables that exist solely inside this scope.',
+    quiz: {
+      question: "What is the primary purpose of the 'let' construct in SKILL?",
+      options: ["To declare global variables", "To loop through list arrays", "To create a safe, isolated local variable scope", "To perform mathematical calculations"],
+      answerIndex: 2,
+      explanation: "let isolates variables inside its block, preventing accidental pollution of the global workspace."
+    }
   },
   {
     id: 3,
@@ -52,7 +72,13 @@ const LESSONS: Lesson[] = [
     instructions: 'You can define and initialize multiple local variables together inside the header list of your `let` block. Let\'s initialize `w` to 10 and `h` to 20.',
     hint: 'let( ((w 10) (h 20))\n  w * h\n)',
     validation: (text: string) => /let\s*\(\s*\(\s*\(\s*w\s+10\s*\)\s*\(\s*h\s+20\s*\)\s*\)/.test(text),
-    explanation: 'Using standard paired lists `((w 10) (h 20))` instantiates and binds values simultaneously.'
+    explanation: 'Using standard paired lists `((w 10) (h 20))` instantiates and binds values simultaneously.',
+    quiz: {
+      question: "In let( ((w 10) (h 20)) w * h ), how are w and h initialized?",
+      options: ["w is initialized to 10, h to 20", "w is initialized to 20, h to 10", "w and h are both initialized to 0", "This syntax is invalid in SKILL"],
+      answerIndex: 0,
+      explanation: "The header of let accepts double-nested lists like ((w 10) (h 20)) to simultaneously declare and initialize local variables."
+    }
   },
   {
     id: 4,
@@ -102,7 +128,13 @@ const LESSONS: Lesson[] = [
     instructions: 'Lisp stands for "LISt Processing". Lists group coordinates, layers, or objects. Instantiate a simple list containing "M1", "M2", and "M3" using the `list` function.',
     hint: 'list("M1" "M2" "M3")',
     validation: (text: string) => /list\s*\(\s*"M1"\s+"M2"\s+"M3"\s*\)/.test(text),
-    explanation: 'Lists can hold strings, numbers, symbols, and nested coordinates.'
+    explanation: 'Lists can hold strings, numbers, symbols, and nested coordinates.',
+    quiz: {
+      question: "Which built-in function is the standard way to construct a list in SKILL?",
+      options: ["array()", "list()", "create_list()", "vector()"],
+      answerIndex: 1,
+      explanation: "list(...) constructs a standard Lisp-style linked list containing the arguments provided."
+    }
   },
   {
     id: 9,
@@ -112,7 +144,13 @@ const LESSONS: Lesson[] = [
     instructions: 'The `car` operator returns the very first item of a list. Use it to extract the first element from a list of coordinates.',
     hint: 'car(list(10 20 30))',
     validation: (text: string) => /car\s*\(\s*list\s*\(\s*10\s+20\s+30\s*\)\s*\)/.test(text),
-    explanation: '`car` stands for "Contents of Address Register" (historical IBM hardware terms).'
+    explanation: '`car` stands for "Contents of Address Register" (historical IBM hardware terms).',
+    quiz: {
+      question: "What does the 'car' operator return when applied to a list?",
+      options: ["The last element", "All elements except the first", "The first element", "The length of the list"],
+      answerIndex: 2,
+      explanation: "car retrieves the head (first item) of a list."
+    }
   },
   {
     id: 10,
@@ -122,7 +160,13 @@ const LESSONS: Lesson[] = [
     instructions: 'The `cdr` operator returns a new list containing everything *except* the first element. Extract the tail of our list of numbers.',
     hint: 'cdr(list(10 20 30))',
     validation: (text: string) => /cdr\s*\(\s*list\s*\(\s*10\s+20\s+30\s*\)\s*\)/.test(text),
-    explanation: '`cdr` stands for "Contents of Decrement Register" and always returns a list.'
+    explanation: '`cdr` stands for "Contents of Decrement Register" and always returns a list.',
+    quiz: {
+      question: "What does the 'cdr' operator return when applied to list(10 20 30)?",
+      options: ["10", "list(20 30)", "30", "nil"],
+      answerIndex: 1,
+      explanation: "cdr returns the tail of the list: a new list containing everything except the first element."
+    }
   },
   {
     id: 11,
@@ -152,7 +196,18 @@ const LESSONS: Lesson[] = [
     instructions: 'Write a basic comparison comparing two variables `x` and `y` using the strict equality operator `==`.',
     hint: 'x == y',
     validation: (text: string) => /x\s*==\s*y/.test(text),
-    explanation: 'In SKILL, `==` checks value equality, whereas `eq` checks reference equality.'
+    explanation: 'In SKILL, `==` checks value equality, whereas `eq` checks reference equality.',
+    quiz: {
+      question: "What is the key difference between == and eq in SKILL?",
+      options: [
+        "== compares reference, eq compares value",
+        "== compares value, eq compares reference",
+        "There is no difference",
+        "== is only for strings, eq is only for numbers"
+      ],
+      answerIndex: 1,
+      explanation: "== evaluates value equivalence, while eq tests reference equality (whether they are the same object in memory)."
+    }
   },
   {
     id: 14,
@@ -184,7 +239,13 @@ const LESSONS: Lesson[] = [
     instructions: 'Lisp conditional expressions are written with an explicit `then` keyword. Print "OK" if a boolean `flag` is true.',
     hint: 'if( flag then\n  printf("OK")\n)',
     validation: (text: string) => /if\s*\(\s*flag\s+then\s+printf/.test(text),
-    explanation: 'The explicit `then` separates the test expression from the executable statements.'
+    explanation: 'The explicit `then` separates the test expression from the executable statements.',
+    quiz: {
+      question: "What explicit keyword must follow the test condition in a SKILL 'if' statement?",
+      options: ["then", "else", "do", "begin"],
+      answerIndex: 0,
+      explanation: "SKILL's conditional uses if( condition then ... else ... ) where the 'then' keyword separates the test from the body."
+    }
   },
   {
     id: 17,
@@ -254,7 +315,13 @@ const LESSONS: Lesson[] = [
     instructions: 'To group logic, define a function using `procedure`. Declare a function named `double` that accepts a parameter `val` and multiplies it by 2.',
     hint: 'procedure( double(val)\n  val * 2\n)',
     validation: (text: string) => /procedure\s*\(\s*double\s*\(\s*val\s*\)/.test(text),
-    explanation: 'In Lisp, the last evaluated expression is automatically returned as the procedure result.'
+    explanation: 'In Lisp, the last evaluated expression is automatically returned as the procedure result.',
+    quiz: {
+      question: "In SKILL, what value is returned by a procedure if no 'return' is explicitly called?",
+      options: ["Always t (true)", "Always nil", "The value of the last evaluated expression", "Nothing (void)"],
+      answerIndex: 2,
+      explanation: "Procedures in SKILL implicitly return the result of their final executed statement."
+    }
   },
   {
     id: 24,
@@ -264,7 +331,13 @@ const LESSONS: Lesson[] = [
     instructions: 'A DPL (Disembodied Property List) stores key-value pairs. It starts with `nil`, followed by quoted symbol keys. Construct a DPL for Metal1 with width 5.0.',
     hint: 'list(nil \'layer "M1" \'width 5.0)',
     validation: (text: string) => /list\s*\(\s*nil\s+'.+\)/.test(text),
-    explanation: 'Quoted symbols like \'layer act as non-evaluated static keywords/keys.'
+    explanation: 'Quoted symbols like \'layer act as non-evaluated static keywords/keys.',
+    quiz: {
+      question: "What does a Disembodied Property List (DPL) always start with as its first element?",
+      options: ["t", "nil", "a list of keys", "a hash table"],
+      answerIndex: 1,
+      explanation: "A DPL must start with nil so Virtuoso can distinguish it from standard key-value lists during property lookup."
+    }
   },
   {
     id: 25,
@@ -728,11 +801,15 @@ export const TutorialSidebar: React.FC<TutorialSidebarProps> = ({ currentText, i
   const [selectedLevel, setSelectedLevel] = useState<'All' | 'Beginner' | 'Intermediate' | 'Advanced' | 'Expert'>('All');
   const [isSolutionVisible, setIsSolutionVisible] = useState(false);
   const [isHintVisible, setIsHintVisible] = useState(false);
+  const [selectedOption, setSelectedOption] = useState<number | null>(null);
+  const [quizChecked, setQuizChecked] = useState<boolean>(false);
 
   // Reset visibility when lesson changes
   useEffect(() => {
     setIsSolutionVisible(false);
     setIsHintVisible(false);
+    setSelectedOption(null);
+    setQuizChecked(false);
   }, [currentLessonIdx]);
 
   // Load completed lessons from localStorage on mount
@@ -764,6 +841,11 @@ export const TutorialSidebar: React.FC<TutorialSidebarProps> = ({ currentText, i
       }
     }
   }, [currentText, currentLessonIdx, isActive, isInline, completedLessons]);
+
+  const handleSelectOption = (idx: number) => {
+    setSelectedOption(idx);
+    setQuizChecked(true);
+  };
 
   const isLast = currentLessonIdx === LESSONS.length - 1;
 
@@ -980,6 +1062,77 @@ export const TutorialSidebar: React.FC<TutorialSidebarProps> = ({ currentText, i
                                   {lesson.explanation}
                                 </p>
                               </div>
+
+                              {lesson.quiz && (
+                                <section className="bg-slate-950/60 border border-white/5 rounded-xl p-3.5 space-y-3.5 shadow-sm">
+                                  <div className="flex items-center gap-2">
+                                    <span className="flex h-2 w-2 relative">
+                                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                                      <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
+                                    </span>
+                                    <span className="text-[9px] font-black tracking-widest text-slate-400 uppercase">Interactive Concept Quiz</span>
+                                  </div>
+                                  <p className="text-[11px] font-bold text-slate-200 leading-relaxed">
+                                    {lesson.quiz.question}
+                                  </p>
+                                  <div className="space-y-2">
+                                    {lesson.quiz.options.map((option, idx) => {
+                                      const isSelected = selectedOption === idx;
+                                      const isCorrect = idx === lesson.quiz!.answerIndex;
+                                      let btnClass = "w-full text-left p-3 rounded-xl text-[10px] leading-relaxed border transition-all duration-200 flex items-center justify-between ";
+                                      
+                                      if (quizChecked) {
+                                        if (isCorrect) {
+                                          btnClass += "bg-emerald-500/10 border-emerald-500/30 text-emerald-300 font-semibold";
+                                        } else if (isSelected) {
+                                          btnClass += "bg-rose-500/10 border-rose-500/30 text-rose-300 font-semibold";
+                                        } else {
+                                          btnClass += "bg-white/[0.01] border-white/5 text-slate-500 opacity-70";
+                                        }
+                                      } else {
+                                        if (isSelected) {
+                                          btnClass += "bg-indigo-500/10 border-indigo-500/40 text-indigo-200 font-semibold shadow-md shadow-indigo-500/5";
+                                        } else {
+                                          btnClass += "bg-white/[0.01] border-white/5 text-slate-400 hover:bg-white/[0.03] hover:border-white/10";
+                                        }
+                                      }
+
+                                      return (
+                                        <button
+                                          key={idx}
+                                          disabled={quizChecked && isCorrect}
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleSelectOption(idx);
+                                          }}
+                                          className={btnClass}
+                                        >
+                                          <span>{option}</span>
+                                          {quizChecked && isCorrect && <span className="text-[9px] font-black text-emerald-400 uppercase tracking-widest bg-emerald-500/10 px-1.5 py-0.5 rounded-md">✓ Correct</span>}
+                                          {quizChecked && isSelected && !isCorrect && <span className="text-[9px] font-black text-rose-400 uppercase tracking-widest bg-rose-500/10 px-1.5 py-0.5 rounded-md">✗ Incorrect</span>}
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+
+                                  {quizChecked && (
+                                    <motion.div 
+                                      initial={{ opacity: 0, y: -5 }}
+                                      animate={{ opacity: 1, y: 0 }}
+                                      className={`p-3 rounded-xl text-[10px] leading-relaxed border ${
+                                        selectedOption === lesson.quiz.answerIndex 
+                                          ? "bg-emerald-500/5 border-emerald-500/10 text-emerald-300/90" 
+                                          : "bg-rose-500/5 border-rose-500/10 text-rose-300/90"
+                                      }`}
+                                    >
+                                      <span className="font-extrabold uppercase tracking-widest text-[8px] block mb-1">
+                                        {selectedOption === lesson.quiz.answerIndex ? "Excellent!" : "Oops, Not Quite:"}
+                                      </span>
+                                      {selectedOption === lesson.quiz.answerIndex ? lesson.quiz.explanation : "Read the instructions above and try selecting another option."}
+                                    </motion.div>
+                                  )}
+                                </section>
+                              )}
 
                               <div className="flex items-center justify-between gap-3 pt-2">
                                 {onInsertCode && (
