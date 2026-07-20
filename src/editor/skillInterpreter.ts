@@ -116,6 +116,35 @@ class SkillInterpreter {
       if (!Array.isArray(list)) throw new Error("*Error* length: argument must be a list");
       return list.length;
     });
+    this.globalEnv.define('strcat', (...args: any[]) => {
+      if (args.some(a => typeof a !== 'string' && typeof a !== 'symbol')) {
+          throw new Error("*Error* strcat: all arguments must be strings or symbols");
+      }
+      return args.join('');
+    });
+    this.globalEnv.define('substring', (str: any, start: any, len?: any) => {
+      if (typeof str !== 'string' && typeof str !== 'symbol') throw new Error("*Error* substring: first argument must be a string");
+      if (typeof start !== 'number') throw new Error("*Error* substring: second argument must be a number");
+      if (len !== undefined && typeof len !== 'number') throw new Error("*Error* substring: third argument must be a number");
+      // SKILL substring is 1-indexed
+      let s = String(str);
+      let startIndex = start > 0 ? start - 1 : s.length + start;
+      if (len !== undefined) {
+          return s.substr(startIndex, len);
+      }
+      return s.substr(startIndex);
+    });
+    this.globalEnv.define('buildString', (list: any[], sep?: any) => {
+      if (list !== null && list !== 'nil' && !Array.isArray(list)) throw new Error("*Error* buildString: first argument must be a list");
+      if (sep !== undefined && typeof sep !== 'string') throw new Error("*Error* buildString: second argument must be a string");
+      if (list === null || list === 'nil') return "";
+      return list.join(sep || "");
+    });
+    this.globalEnv.define('parseString', (str: any, sep?: any) => {
+      if (typeof str !== 'string' && typeof str !== 'symbol') throw new Error("*Error* parseString: first argument must be a string");
+      if (sep !== undefined && typeof sep !== 'string') throw new Error("*Error* parseString: second argument must be a string");
+      return String(str).split(sep || " ");
+    });
     this.globalEnv.define('append', (l1: any[], l2: any[]) => {
       if (l1 !== null && l1 !== 'nil' && !Array.isArray(l1)) throw new Error("*Error* append: first argument must be a list");
       if (l2 !== null && l2 !== 'nil' && !Array.isArray(l2)) throw new Error("*Error* append: second argument must be a list");
@@ -127,7 +156,10 @@ class SkillInterpreter {
       if (this.onOutput) this.onOutput(val);
       return args[args.length - 1];
     });
-    this.globalEnv.define('printf', (format: string, ...args: any[]) => {
+    const formatString = (fnName: string, format: string, ...args: any[]) => {
+      if (typeof format !== 'string') {
+          throw new Error(`*Error* ${fnName}: first argument must be a format string, got ${typeof format}`);
+      }
       let str = format || "";
       let argIndex = 0;
       str = str.replace(/%[-+0-9.]*[sfdgcL]/g, (match) => {
@@ -137,15 +169,15 @@ class SkillInterpreter {
              
              if (specifier === 'd' || specifier === 'f' || specifier === 'g') {
                  if (typeof val !== 'number') {
-                     throw new Error(`*Error* printf: format specifier ${match} expects a number, got ${typeof val}`);
+                     throw new Error(`*Error* ${fnName}: format specifier ${match} expects a number, got ${typeof val}`);
                  }
              } else if (specifier === 's') {
                  if (typeof val !== 'string' && typeof val !== 'symbol' && typeof val !== 'boolean') {
-                     throw new Error(`*Error* printf: format specifier ${match} expects a string or symbol, got ${typeof val}`);
+                     throw new Error(`*Error* ${fnName}: format specifier ${match} expects a string or symbol, got ${typeof val}`);
                  }
              } else if (specifier === 'L') {
                  if (val !== null && typeof val !== 'object' && typeof val !== 'boolean') {
-                     throw new Error(`*Error* printf: format specifier ${match} expects a list, got ${typeof val}`);
+                     throw new Error(`*Error* ${fnName}: format specifier ${match} expects a list, got ${typeof val}`);
                  }
                  return typeof val === 'object' ? JSON.stringify(val) : String(val);
              }
@@ -154,8 +186,43 @@ class SkillInterpreter {
           }
           return match;
       });
-      str = str.replace(/\n/g, '\n');
-      str = str.replace(/\t/g, '\t');
+      str = str.replace(/\\n/g, '\n');
+      str = str.replace(/\\t/g, '\t');
+      return str;
+    };
+
+    this.globalEnv.define('printf', (format: string, ...args: any[]) => {
+      const str = formatString('printf', format, ...args);
+      if (this.onOutput) {
+          this.onOutput(str);
+      }
+      return str;
+    });
+
+    this.globalEnv.define('sprintf', (sym: any, format: string, ...args: any[]) => {
+      // sprintf typically assigns to sym in SKILL: sprintf(nil "...") returns string, sprintf(sym "...") assigns to sym.
+      // Wait, in SKILL, sprintf(var "format" args...) evaluates to the string, and ALSO sets var if it's a symbol.
+      // But we receive the evaluated 'sym', which means the variable value, not its name. 
+      // This is a language quirk. If they just pass `nil` or variable, we just return the string.
+      // For a proper implementation we'd need a special AST form for sprintf, but returning the string is enough for now.
+      // Since evaluating `sym` happened before, we can just use the remaining args as format string. Wait, if sym is first arg...
+      let actualFormat = typeof sym === 'string' && format === undefined ? sym : format;
+      let actualArgs = typeof sym === 'string' && format === undefined ? [] : args;
+      if (typeof sym === 'string' && typeof format !== 'string') {
+         actualFormat = sym;
+         actualArgs = [format, ...args].filter(a => a !== undefined);
+      } else if (sym === null || sym === 'nil') {
+         actualFormat = format;
+         actualArgs = args;
+      }
+      
+      const str = formatString('sprintf', actualFormat, ...actualArgs);
+      return str;
+    });
+
+    this.globalEnv.define('fprintf', (port: any, format: string, ...args: any[]) => {
+      // standard output is implied if port is poport
+      const str = formatString('fprintf', format, ...args);
       if (this.onOutput) {
           this.onOutput(str);
       }
@@ -532,6 +599,35 @@ class SkillInterpreter {
           throw new ReturnException(val);
       }
 
+      if (fnName === 'sprintf') {
+          if (args.length < 2) {
+              if (args.length === 1) {
+                  // e.g. sprintf("hello")
+                  return await this.evaluateExpr(args[0], env);
+              }
+              throw new Error(`*Error* eval: too few arguments - sprintf`);
+          }
+          let sym = args[0];
+          let format = await this.evaluateExpr(args[1], env);
+          let formatArgs = [];
+          for (let i = 2; i < args.length; i++) {
+              formatArgs.push(await this.evaluateExpr(args[i], env));
+          }
+          
+          let fn = env.get('sprintf_helper') || env.get('sprintf');
+          let str = "";
+          if (typeof fn === 'function') {
+              str = fn(null, format, ...formatArgs);
+          } else {
+              // fallback if not defined in env
+              str = format; // basic fallback
+          }
+
+          if (sym.type === 'symbol' && sym.name !== 'nil') {
+              env.set(sym.name, str);
+          }
+          return str;
+      }
       if (fnName === 'setq' || fnName === '=') {
           if (args.length !== 2) throw new Error(`*Error* ${fnName} requires 2 arguments`);
           let sym = args[0];
