@@ -200,7 +200,7 @@ function App() {
     setManualFns(parsed);
   }, []);
 
-  const [showMinimap, setShowMinimap] = useState(false);
+  const [showMinimap, setShowMinimap] = useState(true);
   const [wordWrap, setWordWrap] = useState(true);
   const [fontSize, setFontSize] = useState(14);
   const [isSimulating, setIsSimulating] = useState(false);
@@ -616,7 +616,7 @@ function App() {
       }]);
     });
   }, []);
-  const handleConsoleCommand = (command: string) => {
+  const handleConsoleCommand = async (command: string) => {
     const getTimestamp = () => new Date().toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
     const cmdId = uuidv4();
     
@@ -668,7 +668,7 @@ function App() {
       }]);
     } else {
       // Real evaluation using interpreter
-      const result = skillInterpreter.evaluate(command);
+      const result = await skillInterpreter.evaluate(command);
       if (result.type === 'success') {
         setConsoleOutput(prev => [...prev, { 
           id: uuidv4(), 

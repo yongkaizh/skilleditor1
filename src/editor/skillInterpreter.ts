@@ -503,7 +503,8 @@ class SkillInterpreter {
 
   private async evaluateExpr(expr: ASTNode, env: Environment): Promise<any> {
       if (!expr) return null;
-      switch (expr.type) {
+      try {
+          switch (expr.type) {
           case 'number':
           case 'string':
           case 'boolean':
@@ -537,6 +538,13 @@ class SkillInterpreter {
               return await this.evaluateBlock(expr.elements, env);
           case 'call':
               return await this.evaluateCall(expr.fn, expr.args, env, expr.line);
+          }
+      } catch (err: any) {
+          if (err instanceof ReturnException) throw err;
+          if (err.message && !err.message.includes(' at line ')) {
+              err.message = `${err.message} at line ${expr.line}`;
+          }
+          throw err;
       }
   }
 
