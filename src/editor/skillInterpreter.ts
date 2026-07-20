@@ -324,6 +324,12 @@ class SkillInterpreter {
             i++;
             continue;
         }
+        let objMatch = code.substring(i).match(/^[a-zA-Z_][a-zA-Z0-9_]*:0x[0-9a-fA-F]+/i);
+        if (objMatch) {
+            tokens.push({val: objMatch[0], line, spaceBefore: currSpaceBefore});
+            i += objMatch[0].length;
+            continue;
+        }
         if ("=+-*/<>!:[]".includes(char)) {
             if (char === '-' && (tokens.length === 0 || " \t\n\r(,;=+-*/<>!:[]".includes(code[i-1]))) {
                 i++;
@@ -451,8 +457,15 @@ class SkillInterpreter {
                  }
                  if (i < tokens.length) i++; // consume ')'
                  e = { type: 'call', fn: t.val, args: this.processInfix(list), line: t.line };
-              } else if (/^-?\d+(\.\d+)?$/.test(t.val)) {
-                  e = { type: 'number', value: parseFloat(t.val), line: t.line };
+              } else if (/^-?(0x[0-9a-fA-F]+|\d+(\.\d+)?)$/i.test(t.val)) {
+                  let isHex = t.val.toLowerCase().includes('0x');
+                  let isNeg = t.val.startsWith('-');
+                  let numStr = isNeg ? t.val.substring(1) : t.val;
+                  let val = isHex ? parseInt(numStr, 16) : parseFloat(numStr);
+                  if (isNeg) val = -val;
+                  e = { type: 'number', value: val, line: t.line };
+              } else if (/^[a-zA-Z_][a-zA-Z0-9_]*:0x[0-9a-fA-F]+$/i.test(t.val)) {
+                  e = { type: 'string', value: t.val, line: t.line };
               } else if (t.val.startsWith('"') && t.val.endsWith('"')) {
                   e = { type: 'string', value: t.val.slice(1, -1), line: t.line };
               } else if (t.val === 't') {
