@@ -274,9 +274,77 @@ class SkillInterpreter {
       if (this.onOutput) this.onOutput(str);
       return str;
     });
+    let persistentCV: any = null;
+    const getMockCV = () => {
+      if (!persistentCV) {
+        persistentCV = {
+          _type: 'db:cellview',
+          libName: 'myLib',
+          cellName: 'myCell',
+          viewName: 'layout',
+          bBox: [[0, 0], [20, 20]],
+          instances: [
+            {
+              _type: 'db:instance',
+              name: 'I0',
+              cellName: 'nfet_old',
+              libName: 'analogLib',
+              viewName: 'symbol',
+              bBox: [[0, 0], [2, 2]],
+              objType: 'inst',
+              master: {
+                _type: 'db:cellview',
+                libName: 'analogLib',
+                cellName: 'nfet_old',
+                viewName: 'symbol'
+              }
+            },
+            {
+              _type: 'db:instance',
+              name: 'I1',
+              cellName: 'pfet_old',
+              libName: 'analogLib',
+              viewName: 'symbol',
+              bBox: [[4, 4], [6, 6]],
+              objType: 'inst',
+              master: {
+                _type: 'db:cellview',
+                libName: 'analogLib',
+                cellName: 'pfet_old',
+                viewName: 'symbol'
+              }
+            }
+          ],
+          shapes: [
+            {
+              _type: 'db:shape',
+              objType: 'rect',
+              lpp: ['M1', 'drawing'],
+              layerName: 'M1',
+              bBox: [[0, 0], [5, 5]],
+              width: 1.0,
+              length: 1.0,
+              net: 'GND'
+            },
+            {
+              _type: 'db:shape',
+              objType: 'rect',
+              lpp: ['M2', 'drawing'],
+              layerName: 'M2',
+              bBox: [[0, 0], [5, 5]],
+              width: 1.0,
+              length: 1.0,
+              net: 'VDD'
+            }
+          ]
+        };
+      }
+      return persistentCV;
+    };
+
     this.globalEnv.define('geGetWindowCellView', (windowId?: any) => {
       if (windowId !== undefined && typeof windowId !== 'string' && typeof windowId !== 'number' && typeof windowId !== 'symbol') throw new Error("*Error* geGetWindowCellView: invalid window ID");
-      return 'db:cellview';
+      return getMockCV();
     });
     this.globalEnv.define('geGetSelSetBBox', (windowId?: any) => {
       if (windowId !== undefined && typeof windowId !== 'string' && typeof windowId !== 'number' && typeof windowId !== 'symbol') throw new Error("*Error* geGetSelSetBBox: invalid window ID");
@@ -284,7 +352,8 @@ class SkillInterpreter {
     });
     this.globalEnv.define('geGetSelSet', (windowId?: any) => {
       if (windowId !== undefined && typeof windowId !== 'string' && typeof windowId !== 'number' && typeof windowId !== 'symbol') throw new Error("*Error* geGetSelSet: invalid window ID");
-      return ['obj1', 'obj2'];
+      const cv = getMockCV();
+      return [...cv.instances, ...cv.shapes];
     });
     this.globalEnv.define('xCoord', (coord: any) => {
       if (!Array.isArray(coord) || coord.length < 2) throw new Error("*Error* xCoord: argument must be a coordinate list");
@@ -311,7 +380,83 @@ class SkillInterpreter {
       if (!cv) throw new Error("*Error* dbCreateRect: first argument must be a cellview");
       if (!layer) throw new Error("*Error* dbCreateRect: second argument must be a layer");
       if (!Array.isArray(bbox) || bbox.length < 2) throw new Error("*Error* dbCreateRect: third argument must be a bounding box list");
-      return 'db:shape';
+      const layerName = Array.isArray(layer) ? layer[0] : String(layer);
+      const newShape = {
+        _type: 'db:shape',
+        objType: 'rect',
+        lpp: Array.isArray(layer) ? layer : [layer, 'drawing'],
+        layerName: layerName,
+        bBox: bbox,
+        width: Math.abs(bbox[1][0] - bbox[0][0]),
+        length: Math.abs(bbox[1][1] - bbox[0][1]),
+        net: 'NET_MOCK'
+      };
+      if (cv && typeof cv === 'object' && Array.isArray(cv.shapes)) {
+        cv.shapes.push(newShape);
+      } else {
+        const mockCV = getMockCV();
+        mockCV.shapes.push(newShape);
+      }
+      return newShape;
+    });
+    this.globalEnv.define('dbOpenCellViewByType', (libName: any, cellName: any, viewName: any, _mode?: any, _accessMode?: any) => {
+      return {
+        _type: 'db:cellview',
+        libName,
+        cellName,
+        viewName,
+        bBox: [[0, 0], [10, 10]],
+        instances: [],
+        shapes: []
+      };
+    });
+    this.globalEnv.define('dbClose', (_obj: any) => {
+      return true;
+    });
+    this.globalEnv.define('dbDeleteObject', (obj: any) => {
+      const cv = getMockCV();
+      cv.shapes = cv.shapes.filter((s: any) => s !== obj);
+      cv.instances = cv.instances.filter((i: any) => i !== obj);
+      return true;
+    });
+    this.globalEnv.define('dbFlattenInst', (_inst: any, _level: any, _flattenPcells: any, _flattenVias: any) => {
+      return true;
+    });
+    this.globalEnv.define('dbCreateLabel', (cv: any, layer: any, xy: any, text: any, justify: any, orient: any, font: any, height: any) => {
+      return {
+        _type: 'db:label',
+        cv,
+        layer,
+        xy,
+        text,
+        justify,
+        orient,
+        font,
+        height
+      };
+    });
+    this.globalEnv.define('dbPointInBBox', (point: any, bbox: any) => {
+      if (!Array.isArray(point) || point.length < 2) throw new Error("*Error* dbPointInBBox: point must be a coordinate list");
+      if (!Array.isArray(bbox) || bbox.length < 2) throw new Error("*Error* dbPointInBBox: bbox must be a bounding box list");
+      const x = point[0], y = point[1];
+      const x1 = bbox[0][0], y1 = bbox[0][1];
+      const x2 = bbox[1][0], y2 = bbox[1][1];
+      return (x >= x1 && x <= x2 && y >= y1 && y <= y2) || (x >= x2 && x <= x1 && y >= y2 && y <= y1);
+    });
+    this.globalEnv.define('dbGetOverlaps', (cv: any, bbox: any) => {
+      if (!Array.isArray(bbox) || bbox.length < 2) throw new Error("*Error* dbGetOverlaps: bbox must be a bounding box list");
+      const currentCV = cv && typeof cv === 'object' && cv._type === 'db:cellview' ? cv : getMockCV();
+      if (Array.isArray(currentCV.shapes)) {
+        return currentCV.shapes.filter((shape: any) => {
+          const sb = shape.bBox;
+          if (!sb || !Array.isArray(sb)) return false;
+          return !(sb[1][0] < bbox[0][0] || sb[0][0] > bbox[1][0] || sb[1][1] < bbox[0][1] || sb[0][1] > bbox[1][1]);
+        });
+      }
+      return [];
+    });
+    this.globalEnv.define('dbMoveObject', (_obj: any, _cv: any, _transform: any) => {
+      return true;
     });
 
   }
@@ -608,6 +753,22 @@ private async _evaluateExpr(expr: ASTNode, env: Environment): Promise<any> {
                   if (typeof val !== 'number') throw new Error(`*Error* eval: not a number - ${numStr}`);
                   return -val;
               }
+              if (expr.name.includes('~>') || expr.name.includes('->')) {
+                  const parts = expr.name.split(/~>|->/);
+                  let obj = env.get(parts[0]);
+                  if (obj === undefined) {
+                      throw new Error(`*Error* eval: unbound variable - ${parts[0]} at line ${expr.line}`);
+                  }
+                  for (let i = 1; i < parts.length; i++) {
+                      const prop = parts[i];
+                      if (obj && typeof obj === 'object') {
+                          obj = obj[prop];
+                      } else {
+                          obj = null;
+                      }
+                  }
+                  return obj;
+              }
               let envVal = env.get(expr.name);
               if (envVal === undefined) {
                   if (expr.name === 't') return true;
@@ -749,6 +910,26 @@ private async _evaluateExpr(expr: ASTNode, env: Environment): Promise<any> {
           let val = await this.evaluateExpr(args[1], env);
           
           if (sym.type === 'symbol') {
+              if (sym.name.includes('~>') || sym.name.includes('->')) {
+                  const parts = sym.name.split(/~>|->/);
+                  let obj = env.get(parts[0]);
+                  if (obj === undefined) {
+                      throw new Error(`*Error* eval: unbound variable - ${parts[0]} at line ${sym.line}`);
+                  }
+                  for (let i = 1; i < parts.length - 1; i++) {
+                      const prop = parts[i];
+                      if (obj && typeof obj === 'object') {
+                          obj = obj[prop];
+                      } else {
+                          obj = null;
+                      }
+                  }
+                  if (obj && typeof obj === 'object') {
+                      obj[parts[parts.length - 1]] = val;
+                      return val;
+                  }
+                  throw new Error(`*Error* eval: cannot set property on non-object at line ${sym.line}`);
+              }
               env.set(sym.name, val);
               return val;
           } else if (sym.type === 'call' && sym.fn === 'array_access') {
