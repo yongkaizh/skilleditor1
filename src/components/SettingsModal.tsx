@@ -1,5 +1,6 @@
 import React from 'react';
-import { X, Settings, Type, Layout, WrapText } from 'lucide-react';
+import { X, Settings, Type, Layout, WrapText, Database } from 'lucide-react';
+import { clear } from 'idb-keyval';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -16,6 +17,15 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   isOpen, onClose, wordWrap, setWordWrap, showMinimap, setShowMinimap, fontSize, setFontSize
 }) => {
   if (!isOpen) return null;
+
+  const handleClearDatabase = async () => {
+    if (confirm("Are you sure you want to clean up the workspace database? This will delete all local files permanently.")) {
+      await clear();
+      localStorage.removeItem("cadence-workspace-auto-save");
+      localStorage.removeItem("cadence-workspace-files");
+      window.location.reload();
+    }
+  };
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -77,6 +87,24 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 onChange={e => setFontSize(parseInt(e.target.value))}
                 className="w-full accent-indigo-500"
               />
+            </div>
+            
+            <div className="pt-4 border-t border-white/10">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-sm text-red-400">
+                  <Database size={16} />
+                  <span>Clean Up Database</span>
+                </div>
+                <button 
+                  onClick={handleClearDatabase}
+                  className="px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg text-xs font-medium transition-colors"
+                >
+                  Clear All Data
+                </button>
+              </div>
+              <p className="text-[10px] text-slate-500 mt-2 leading-relaxed">
+                This will erase all saved SKILL files from your browser's local database and reset the workspace entirely.
+              </p>
             </div>
           </div>
         </div>
