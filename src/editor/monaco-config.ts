@@ -330,6 +330,19 @@ export function configureMonaco(monaco: Monaco, manualFunctions: SkillFunction[]
           range
         },
         {
+          label: 'defun',
+          kind: monaco.languages.CompletionItemKind.Snippet,
+          insertText: [
+            'defun( ${1:myFunction} (${2:args})',
+            '    ${3:; body}',
+            ')'
+          ].join('\n'),
+          insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+          detail: 'SKILL Defun Template',
+          sortText: 'b_defun',
+          range
+        },
+        {
           label: 'let',
           kind: monaco.languages.CompletionItemKind.Snippet,
           insertText: [
@@ -343,7 +356,97 @@ export function configureMonaco(monaco: Monaco, manualFunctions: SkillFunction[]
           sortText: 'b_let',
           range
         },
-        // ... adding more essential snippets directly
+        {
+          label: 'prog',
+          kind: monaco.languages.CompletionItemKind.Snippet,
+          insertText: [
+            'prog( (${1:vars})',
+            '    ${2:; body}',
+            '    return(${3:nil})',
+            ')'
+          ].join('\n'),
+          insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+          detail: 'SKILL Prog Block',
+          sortText: 'b_prog',
+          range
+        },
+        {
+          label: 'if',
+          kind: monaco.languages.CompletionItemKind.Snippet,
+          insertText: [
+            'if( ${1:condition} then',
+            '    ${2:; true_body}',
+            'else',
+            '    ${3:; false_body}',
+            ')'
+          ].join('\n'),
+          insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+          detail: 'SKILL If-Then-Else',
+          sortText: 'b_if',
+          range
+        },
+        {
+          label: 'when',
+          kind: monaco.languages.CompletionItemKind.Snippet,
+          insertText: [
+            'when( ${1:condition}',
+            '    ${2:; body}',
+            ')'
+          ].join('\n'),
+          insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+          detail: 'SKILL When',
+          sortText: 'b_when',
+          range
+        },
+        {
+          label: 'unless',
+          kind: monaco.languages.CompletionItemKind.Snippet,
+          insertText: [
+            'unless( ${1:condition}',
+            '    ${2:; body}',
+            ')'
+          ].join('\n'),
+          insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+          detail: 'SKILL Unless',
+          sortText: 'b_unless',
+          range
+        },
+        {
+          label: 'cond',
+          kind: monaco.languages.CompletionItemKind.Snippet,
+          insertText: [
+            'cond(',
+            '    (${1:condition1}',
+            '        ${2:; body1}',
+            '    )',
+            '    (t',
+            '        ${3:; default_body}',
+            '    )',
+            ')'
+          ].join('\n'),
+          insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+          detail: 'SKILL Cond',
+          sortText: 'b_cond',
+          range
+        },
+        {
+          label: 'case',
+          kind: monaco.languages.CompletionItemKind.Snippet,
+          insertText: [
+            'case( ${1:variable}',
+            '    (${2:value1}',
+            '        ${3:; body1}',
+            '    )',
+            '    (t',
+            '        ${4:; default_body}',
+            '    )',
+            ')'
+          ].join('\n'),
+          insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+          detail: 'SKILL Case',
+          sortText: 'b_case',
+          range
+        },
         {
           label: 'foreach',
           kind: monaco.languages.CompletionItemKind.Snippet,
@@ -356,6 +459,32 @@ export function configureMonaco(monaco: Monaco, manualFunctions: SkillFunction[]
           documentation: 'Iterate over a list',
           detail: 'SKILL Loop',
           sortText: 'b_foreach',
+          range
+        },
+        {
+          label: 'for',
+          kind: monaco.languages.CompletionItemKind.Snippet,
+          insertText: [
+            'for( ${1:i} ${2:1} ${3:10}',
+            '    ${4:; body}',
+            ')'
+          ].join('\n'),
+          insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+          detail: 'SKILL For Loop',
+          sortText: 'b_for',
+          range
+        },
+        {
+          label: 'while',
+          kind: monaco.languages.CompletionItemKind.Snippet,
+          insertText: [
+            'while( ${1:condition}',
+            '    ${2:; body}',
+            ')'
+          ].join('\n'),
+          insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+          detail: 'SKILL While Loop',
+          sortText: 'b_while',
           range
         }
       ];

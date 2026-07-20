@@ -70,30 +70,47 @@ class SkillInterpreter {
 
   private initBuiltins() {
     this.globalEnv.define('+', (...args: any[]) => {
-      if (args.some(a => typeof a !== 'number')) throw new Error(`*Error* plus: not a number`);
+      if (args.some(a => typeof a !== 'number')) throw new Error("*Error* plus: not a number");
       return args.reduce((a, b) => a + b, 0);
     });
     this.globalEnv.define('-', (...args: any[]) => {
       if (args.length === 0) return 0;
-      if (args.some(a => typeof a !== 'number')) throw new Error(`*Error* difference: not a number`);
+      if (args.some(a => typeof a !== 'number')) throw new Error("*Error* difference: not a number");
       return args.length === 1 ? -args[0] : args[0] - args[1];
     });
     this.globalEnv.define('*', (...args: any[]) => {
-      if (args.some(a => typeof a !== 'number')) throw new Error(`*Error* times: not a number`);
+      if (args.some(a => typeof a !== 'number')) throw new Error("*Error* times: not a number");
       return args.reduce((a, b) => a * b, 1);
     });
     this.globalEnv.define('/', (a: any, b: any) => {
-      if (typeof a !== 'number' || typeof b !== 'number') throw new Error(`*Error* quotient: not a number`);
-      if (b === 0) throw new Error(`*Error* quotient: division by zero`);
+      if (typeof a !== 'number' || typeof b !== 'number') throw new Error("*Error* quotient: not a number");
+      if (b === 0) throw new Error("*Error* quotient: division by zero");
       return a / b;
     });
-    this.globalEnv.define('<', (a: any, b: any) => a < b);
-    this.globalEnv.define('>', (a: any, b: any) => a > b);
-    this.globalEnv.define('<=', (a: any, b: any) => a <= b);
-    this.globalEnv.define('>=', (a: any, b: any) => a >= b);
+    this.globalEnv.define('<', (a: any, b: any) => {
+      if (typeof a !== typeof b) throw new Error("*Error* lessp: type mismatch");
+      return a < b;
+    });
+    this.globalEnv.define('>', (a: any, b: any) => {
+      if (typeof a !== typeof b) throw new Error("*Error* greaterp: type mismatch");
+      return a > b;
+    });
+    this.globalEnv.define('<=', (a: any, b: any) => {
+      if (typeof a !== typeof b) throw new Error("*Error* leq: type mismatch");
+      return a <= b;
+    });
+    this.globalEnv.define('>=', (a: any, b: any) => {
+      if (typeof a !== typeof b) throw new Error("*Error* geq: type mismatch");
+      return a >= b;
+    });
     this.globalEnv.define('==', (a: any, b: any) => a === b);
     this.globalEnv.define('!=', (a: any, b: any) => a !== b);
-    this.globalEnv.define('makeTable', (_name?: string, _defVal?: any) => { return {}; });
+    this.globalEnv.define('makeTable', (name?: any, defVal?: any) => {
+      if (name !== undefined && typeof name !== 'string' && typeof name !== 'symbol') {
+          throw new Error("*Error* makeTable: first argument must be a string or symbol");
+      }
+      return {}; 
+    });
     this.globalEnv.define('list', (...args: any[]) => args);
     this.globalEnv.define('car', (list: any[]) => {
       if (list === null || list === undefined || list === 'nil') return null;
@@ -116,64 +133,132 @@ class SkillInterpreter {
       if (!Array.isArray(list)) throw new Error("*Error* length: argument must be a list");
       return list.length;
     });
+    this.globalEnv.define('strcat', (...args: any[]) => {
+      if (args.some(a => typeof a !== 'string' && typeof a !== 'symbol')) {
+          throw new Error("*Error* strcat: all arguments must be strings or symbols");
+      }
+      return args.join('');
+    });
+    this.globalEnv.define('substring', (str: any, start: any, len?: any) => {
+      if (typeof str !== 'string' && typeof str !== 'symbol') throw new Error("*Error* substring: first argument must be a string");
+      if (typeof start !== 'number') throw new Error("*Error* substring: second argument must be a number");
+      if (len !== undefined && typeof len !== 'number') throw new Error("*Error* substring: third argument must be a number");
+      let s = String(str);
+      let startIndex = start > 0 ? start - 1 : s.length + start;
+      if (len !== undefined) return s.substr(startIndex, len);
+      return s.substr(startIndex);
+    });
+    this.globalEnv.define('buildString', (list: any[], sep?: any) => {
+      if (list !== null && list !== 'nil' && !Array.isArray(list)) throw new Error("*Error* buildString: first argument must be a list");
+      if (sep !== undefined && typeof sep !== 'string') throw new Error("*Error* buildString: second argument must be a string");
+      if (list === null || list === 'nil') return "";
+      return list.join(sep || "");
+    });
+    this.globalEnv.define('parseString', (str: any, sep?: any) => {
+      if (typeof str !== 'string' && typeof str !== 'symbol') throw new Error("*Error* parseString: first argument must be a string");
+      if (sep !== undefined && typeof sep !== 'string') throw new Error("*Error* parseString: second argument must be a string");
+      return String(str).split(sep || " ");
+    });
     this.globalEnv.define('append', (l1: any[], l2: any[]) => {
       if (l1 !== null && l1 !== 'nil' && !Array.isArray(l1)) throw new Error("*Error* append: first argument must be a list");
       if (l2 !== null && l2 !== 'nil' && !Array.isArray(l2)) throw new Error("*Error* append: second argument must be a list");
       return (l1 && l1 !== 'nil' ? l1 : []).concat(l2 && l2 !== 'nil' ? l2 : []);
     });
-    
     this.globalEnv.define('println', (...args: any[]) => {
       const val = args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ');
       if (this.onOutput) this.onOutput(val);
       return args[args.length - 1];
     });
-    this.globalEnv.define('printf', (format: string, ...args: any[]) => {
+    const formatString = (fnName: string, format: string, ...args: any[]) => {
+      if (typeof format !== 'string') {
+          throw new Error(`*Error* ${fnName}: first argument must be a format string, got ${typeof format}`);
+      }
       let str = format || "";
       let argIndex = 0;
       str = str.replace(/%[-+0-9.]*[sfdgcL]/g, (match) => {
           if (argIndex < args.length) {
              let val = args[argIndex++];
              let specifier = match[match.length - 1];
-             
              if (specifier === 'd' || specifier === 'f' || specifier === 'g') {
-                 if (typeof val !== 'number') {
-                     throw new Error(`*Error* printf: format specifier ${match} expects a number, got ${typeof val}`);
-                 }
+                 if (typeof val !== 'number') throw new Error(`*Error* ${fnName}: format specifier ${match} expects a number, got ${typeof val}`);
              } else if (specifier === 's') {
-                 if (typeof val !== 'string' && typeof val !== 'symbol' && typeof val !== 'boolean') {
-                     throw new Error(`*Error* printf: format specifier ${match} expects a string or symbol, got ${typeof val}`);
-                 }
+                 if (typeof val !== 'string' && typeof val !== 'symbol' && typeof val !== 'boolean') throw new Error(`*Error* ${fnName}: format specifier ${match} expects a string or symbol, got ${typeof val}`);
              } else if (specifier === 'L') {
-                 if (val !== null && typeof val !== 'object' && typeof val !== 'boolean') {
-                     throw new Error(`*Error* printf: format specifier ${match} expects a list, got ${typeof val}`);
-                 }
+                 if (val !== null && typeof val !== 'object' && typeof val !== 'boolean') throw new Error(`*Error* ${fnName}: format specifier ${match} expects a list, got ${typeof val}`);
                  return typeof val === 'object' ? JSON.stringify(val) : String(val);
              }
-             
              return String(val);
           }
           return match;
       });
-      str = str.replace(/\n/g, '\n');
-      str = str.replace(/\t/g, '\t');
-      if (this.onOutput) {
-          this.onOutput(str);
-      }
+      str = str.replace(/\\n/g, '\n');
+      str = str.replace(/\\t/g, '\t');
+      return str;
+    };
+    this.globalEnv.define('printf', (format: string, ...args: any[]) => {
+      const str = formatString('printf', format, ...args);
+      if (this.onOutput) this.onOutput(str);
       return str;
     });
+    this.globalEnv.define('sprintf', (sym: any, format: string, ...args: any[]) => {
+      let actualFormat = typeof sym === 'string' && format === undefined ? sym : format;
+      let actualArgs = typeof sym === 'string' && format === undefined ? [] : args;
+      if (typeof sym === 'string' && typeof format !== 'string') {
+         actualFormat = sym;
+         actualArgs = [format, ...args].filter(a => a !== undefined);
+      } else if (sym === null || sym === 'nil') {
+         actualFormat = format;
+         actualArgs = args;
+      }
+      const str = formatString('sprintf', actualFormat, ...actualArgs);
+      return str;
+    });
+    this.globalEnv.define('fprintf', (port: any, format: string, ...args: any[]) => {
+      const str = formatString('fprintf', format, ...args);
+      if (this.onOutput) this.onOutput(str);
+      return str;
+    });
+    this.globalEnv.define('geGetWindowCellView', (windowId?: any) => {
+      if (windowId !== undefined && typeof windowId !== 'string' && typeof windowId !== 'number' && typeof windowId !== 'symbol') throw new Error("*Error* geGetWindowCellView: invalid window ID");
+      return 'db:cellview';
+    });
+    this.globalEnv.define('geGetSelSetBBox', (windowId?: any) => {
+      if (windowId !== undefined && typeof windowId !== 'string' && typeof windowId !== 'number' && typeof windowId !== 'symbol') throw new Error("*Error* geGetSelSetBBox: invalid window ID");
+      return [[0, 0], [10, 10]];
+    });
+    this.globalEnv.define('geGetSelSet', (windowId?: any) => {
+      if (windowId !== undefined && typeof windowId !== 'string' && typeof windowId !== 'number' && typeof windowId !== 'symbol') throw new Error("*Error* geGetSelSet: invalid window ID");
+      return ['obj1', 'obj2'];
+    });
+    this.globalEnv.define('xCoord', (coord: any) => {
+      if (!Array.isArray(coord) || coord.length < 2) throw new Error("*Error* xCoord: argument must be a coordinate list");
+      return coord[0];
+    });
+    this.globalEnv.define('yCoord', (coord: any) => {
+      if (!Array.isArray(coord) || coord.length < 2) throw new Error("*Error* yCoord: argument must be a coordinate list");
+      return coord[1];
+    });
+    this.globalEnv.define('lowerLeft', (bbox: any) => {
+      if (!Array.isArray(bbox) || bbox.length < 2) throw new Error("*Error* lowerLeft: argument must be a bounding box list");
+      return bbox[0];
+    });
+    this.globalEnv.define('upperRight', (bbox: any) => {
+      if (!Array.isArray(bbox) || bbox.length < 2) throw new Error("*Error* upperRight: argument must be a bounding box list");
+      return bbox[1];
+    });
+    this.globalEnv.define('dbMoveFig', (fig: any, cv: any, transform: any) => {
+      if (!fig) throw new Error("*Error* dbMoveFig: first argument must be a database object");
+      if (!Array.isArray(transform)) throw new Error("*Error* dbMoveFig: third argument must be a transform list");
+      return true;
+    });
+    this.globalEnv.define('dbCreateRect', (cv: any, layer: any, bbox: any) => {
+      if (!cv) throw new Error("*Error* dbCreateRect: first argument must be a cellview");
+      if (!layer) throw new Error("*Error* dbCreateRect: second argument must be a layer");
+      if (!Array.isArray(bbox) || bbox.length < 2) throw new Error("*Error* dbCreateRect: third argument must be a bounding box list");
+      return 'db:shape';
+    });
 
-    // EDA Mocks
-    this.globalEnv.define('geGetWindowCellView', () => 'db:cellview');
-    this.globalEnv.define('geGetSelSetBBox', () => [[0, 0], [10, 10]]);
-    this.globalEnv.define('geGetSelSet', () => ['obj1', 'obj2']);
-    this.globalEnv.define('xCoord', (coord: any) => coord ? coord[0] : 0);
-    this.globalEnv.define('yCoord', (coord: any) => coord ? coord[1] : 0);
-    this.globalEnv.define('lowerLeft', (bbox: any) => bbox ? bbox[0] : [0,0]);
-    this.globalEnv.define('upperRight', (bbox: any) => bbox ? bbox[1] : [10,10]);
-    this.globalEnv.define('dbMoveFig', () => true);
-    this.globalEnv.define('dbCreateRect', () => 'db:shape');
   }
-
   public setOutputHandler(handler: (text: string) => void) {
     this.onOutput = handler;
   }
@@ -493,6 +578,7 @@ class SkillInterpreter {
       }
 
       if (fnName === 'let' || fnName === 'prog') {
+          if (!args[0] || args[0].type !== 'list') throw new Error(`*Error* ${fnName}: first argument must be a list of variables`);
           let vars: string[] = [];
           if (args[0] && args[0].type === 'list') {
               for (let e of args[0].elements) {
@@ -532,6 +618,35 @@ class SkillInterpreter {
           throw new ReturnException(val);
       }
 
+      if (fnName === 'sprintf') {
+          if (args.length < 2) {
+              if (args.length === 1) {
+                  // e.g. sprintf("hello")
+                  return await this.evaluateExpr(args[0], env);
+              }
+              throw new Error(`*Error* eval: too few arguments - sprintf`);
+          }
+          let sym = args[0];
+          let format = await this.evaluateExpr(args[1], env);
+          let formatArgs = [];
+          for (let i = 2; i < args.length; i++) {
+              formatArgs.push(await this.evaluateExpr(args[i], env));
+          }
+          
+          let fn = env.get('sprintf_helper') || env.get('sprintf');
+          let str = "";
+          if (typeof fn === 'function') {
+              str = fn(null, format, ...formatArgs);
+          } else {
+              // fallback if not defined in env
+              str = format; // basic fallback
+          }
+
+          if (sym.type === 'symbol' && sym.name !== 'nil') {
+              env.set(sym.name, str);
+          }
+          return str;
+      }
       if (fnName === 'setq' || fnName === '=') {
           if (args.length !== 2) throw new Error(`*Error* ${fnName} requires 2 arguments`);
           let sym = args[0];
@@ -562,6 +677,7 @@ class SkillInterpreter {
       }
 
       if (fnName === 'if') {
+          if (args.length < 2) throw new Error("*Error* eval: too few arguments - if");
           let cond = await this.evaluateExpr(args[0], env);
           let thenBranch = [];
           let elseBranch = [];
@@ -580,6 +696,7 @@ class SkillInterpreter {
       }
 
       if (fnName === '&&') {
+          if (args.length < 2) throw new Error("*Error* eval: too few arguments - &&");
           let left = await this.evaluateExpr(args[0], env);
           if (!left || left === 'nil' || left === '*unbound_nil*') return false;
           return await this.evaluateExpr(args[1], env);
@@ -592,6 +709,7 @@ class SkillInterpreter {
       }
       
       if (fnName === 'when') {
+          if (args.length < 2) throw new Error("*Error* eval: too few arguments - when");
           let cond = await this.evaluateExpr(args[0], env);
           if (cond && cond !== 'nil' && cond !== '*unbound_nil*') {
               return await this.evaluateBlock(args.slice(1), env);
@@ -600,6 +718,7 @@ class SkillInterpreter {
       }
       
       if (fnName === 'unless') {
+          if (args.length < 2) throw new Error("*Error* eval: too few arguments - unless");
           let cond = await this.evaluateExpr(args[0], env);
           if (!cond || cond === 'nil' || cond === '*unbound_nil*') {
               return await this.evaluateBlock(args.slice(1), env);
@@ -689,6 +808,32 @@ class SkillInterpreter {
           return null;
       }
 
+      if (fnName === 'mapcar') {
+          if (args.length < 2) throw new Error("*Error* eval: too few arguments - mapcar");
+          let funcExpr = args[0];
+          let lst = await this.evaluateExpr(args[1], env);
+          
+          if (lst !== null && lst !== 'nil' && !Array.isArray(lst)) {
+              throw new Error("*Error* mapcar: second argument must be a list");
+          }
+          if (lst === null || lst === 'nil') return [];
+          
+          let funcName = "";
+          if (funcExpr.type === 'symbol') funcName = funcExpr.name;
+          else if (funcExpr.type === 'string') funcName = funcExpr.value;
+          else {
+              let evalFunc = await this.evaluateExpr(funcExpr, env);
+              if (typeof evalFunc === 'string' || typeof evalFunc === 'symbol') funcName = evalFunc;
+          }
+          if (!funcName) throw new Error("*Error* mapcar: first argument must be a function name or symbol");
+          
+          let result = [];
+          for (let item of lst) {
+              let callNode = { type: 'call', fn: funcName, args: [{ type: 'quote', value: item }] };
+              result.push(await this.evaluateExpr(callNode as any, env));
+          }
+          return result;
+      }
       if (fnName === 'foreach') {
           if (args.length < 2) throw new Error("*Error* eval: too few arguments - foreach");
           if (args[0].type !== 'symbol') throw new Error("*Error* foreach: first argument must be a symbol");

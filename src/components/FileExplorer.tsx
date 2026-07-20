@@ -1,5 +1,7 @@
 import React, { useState, useRef, useMemo } from 'react';
-import { FileCode, Plus, Trash2, Edit2, Check, X, Folder, FolderOpen, ChevronRight, ChevronDown, Upload, FolderUp } from 'lucide-react';
+import { FileCode, Plus, Trash2, Edit2, Check, X, Folder, FolderOpen, ChevronRight, ChevronDown, Upload, FolderUp, Download } from 'lucide-react';
+import JSZip from 'jszip';
+import { saveAs } from 'file-saver';
 import { v4 as uuidv4 } from 'uuid';
 
 export interface SkillFile {
@@ -40,6 +42,39 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const folderInputRef = useRef<HTMLInputElement>(null);
+
+  
+  
+  const handleExportFile = (fileId) => {
+    const file = files.find(f => f.id === fileId);
+    if (file) {
+      const blob = new Blob([file.content], { type: 'text/plain;charset=utf-8' });
+      saveAs(blob, file.name);
+    }
+  };
+
+
+  const handleExportFolder = async (folderPath) => {
+    const zip = new JSZip();
+    const folderFiles = files.filter(f => f.name.startsWith(folderPath + '/'));
+    if (folderFiles.length === 0) return;
+    folderFiles.forEach(f => {
+      const relativeName = f.name.substring(folderPath.length + 1);
+      zip.file(relativeName, f.content);
+    });
+    const blob = await zip.generateAsync({ type: 'blob' });
+    const folderName = folderPath.split('/').pop() || 'folder';
+    saveAs(blob, folderName + '.zip');
+  };
+
+  const handleExportAll = async () => {
+    const zip = new JSZip();
+    files.forEach(f => {
+      zip.file(f.name, f.content);
+    });
+    const blob = await zip.generateAsync({ type: 'blob' });
+    saveAs(blob, 'cadence_skill_project.zip');
+  };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const uploadedFiles = e.target.files;
@@ -283,6 +318,14 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
           >
             <FolderUp size={14} />
           </button>
+          
+          <button 
+            onClick={handleExportAll}
+            className="p-1 hover:bg-white/10 rounded text-[#94a3b8] hover:text-white transition-colors"
+            title="Export Project"
+          >
+            <Download size={14} />
+          </button>
           <button 
             onClick={() => handleAddFile('')}
             className="p-1 hover:bg-white/10 rounded text-[#94a3b8] hover:text-white transition-colors"
@@ -314,6 +357,16 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
               >
                 <Edit2 size={14} /> Rename
               </button>
+              
+              <button 
+                className="w-full text-left px-3 py-1.5 text-sm text-[#94a3b8] hover:text-white hover:bg-indigo-500/20 flex items-center gap-2"
+                onClick={() => {
+                  handleExportFile(contextMenu.fileId);
+                  setContextMenu(null);
+                }}
+              >
+                <Download size={14} /> Export
+              </button>
               <button 
                 className="w-full text-left px-3 py-1.5 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 flex items-center gap-2"
                 onClick={() => {
@@ -335,6 +388,16 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
                 }}
               >
                 <Plus size={14} /> New File Here
+              </button>
+            
+              <button 
+                className="w-full text-left px-3 py-1.5 text-sm text-[#94a3b8] hover:text-white hover:bg-indigo-500/20 flex items-center gap-2"
+                onClick={() => {
+                  handleExportFolder(contextMenu.folderPath);
+                  setContextMenu(null);
+                }}
+              >
+                <Download size={14} /> Export Folder
               </button>
             </>
           )}
