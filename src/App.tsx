@@ -159,7 +159,7 @@ function App() {
     }
   };
 
-  const activeFile = files.find(f => f.id === activeFileId) || files[0];
+  const activeFile = files.find(f => f.id === activeFileId) || files[0] || { id: 'fallback', name: 'fallback', content: '' };
   const content = activeFile.content;
 
   const setContent = (newContent: string | ((prev: string) => string)) => {
@@ -222,10 +222,14 @@ function App() {
   const [wordWrap, setWordWrap] = useState(true);
   const [fontSize, setFontSize] = useState(14);
   const [apiKey, setApiKey] = useState(() => localStorage.getItem("cadence-workspace-gemini-key") || "");
+  const [aiProvider, setAiProvider] = useState(() => localStorage.getItem("cadence-ai-provider") || "gemini");
 
   useEffect(() => {
     localStorage.setItem("cadence-workspace-gemini-key", apiKey);
   }, [apiKey]);
+  useEffect(() => {
+    localStorage.setItem("cadence-ai-provider", aiProvider);
+  }, [aiProvider]);
 
   const [isSimulating, setIsSimulating] = useState(false);
   const [proposedRefactor, setProposedRefactor] = useState<RefactorResult | null>(null);
@@ -784,7 +788,7 @@ function App() {
         body: JSON.stringify({
           code: content,
           error: msg.text,
-          context: msg.details || "",
+          context: (msg as any).details || "",
           apiKey,
           provider: aiProvider
         })

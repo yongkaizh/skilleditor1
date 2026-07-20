@@ -27,6 +27,7 @@ async function startServer() {
   const PORT = 3000;
 
   app.use(express.json());
+  app.post("/api/log-error", (req, res) => { fs.appendFileSync("browser_errors.log", JSON.stringify(req.body) + "\n"); console.error("BROWSER ERROR:", req.body); res.send("ok"); });
 
   // API Routes
   app.get("/api/health", (req, res) => {

@@ -22,6 +22,7 @@ export interface ConsoleMessage {
   text: string;
   timestamp: string;
   id: string;
+  details?: string;
   quickFix?: {
     label: string;
     action: () => void;
@@ -50,7 +51,7 @@ export const Console: React.FC<ConsoleProps> = ({
   onCommand,
   onApplyQuickFix,
   onExpertAnalyze,
-  onRefactor,
+
   onJumpToError,
   isSimulating 
 }) => {

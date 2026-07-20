@@ -1,6 +1,9 @@
 <!doctype html>
 <html lang="en">
   <head>
+<script>
+function fs_log_error(msg, stack) { fetch("/api/log-error", { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({ msg, stack }) }); }
+window.onerror = function(msg, url, lineNo, columnNo, error) { console.error(msg, error); fs_log_error(msg, error ? error.stack : ""); fetch("/api/log-error", { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({ msg, url, lineNo, columnNo, error: error ? error.stack : null }) }); return false; };</script>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />

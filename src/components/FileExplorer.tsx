@@ -370,7 +370,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
               <button 
                 className="w-full text-left px-3 py-1.5 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 flex items-center gap-2"
                 onClick={() => {
-                  handleDeleteFile(contextMenu.fileId!);
+                  handleDelete({ stopPropagation: () => {}, preventDefault: () => {} } as any, contextMenu.fileId!);
                   setContextMenu(null);
                 }}
               >
