@@ -1075,39 +1075,111 @@ function App() {
               transition={{ type: "spring", bounce: 0, duration: 0.3 }}
               className="absolute md:relative z-30 h-full bg-[#0b0c10] flex flex-col shrink-0 shadow-2xl md:shadow-none overflow-hidden border-r border-white/[0.04]"
             >
-              <div className="w-[100vw] md:w-[400px] h-full flex flex-col relative">
-                {activeTab === "files" && (
-                  <div className="flex flex-col h-full overflow-hidden">
-                    <FileExplorer 
-                      files={files} 
-                      activeFileId={activeFileId} 
-                      onFileSelect={handleFileSelect} 
-                      onFilesChange={setFiles} 
-                    />
-                    <FunctionNavigator onFunctionClick={handleFunctionJump} />
-                  </div>
-                )}
-                {activeTab === "search" && (
-                  <SearchSidebar files={files} onResultClick={handleSearchResultClick} onReplaceAll={handleReplaceAll} onClose={() => setActiveTab(null)} />
-                )}
-                {activeTab === "outline" && (
-                  <CodeOutlineSidebar content={content} onNavigate={(line) => handleNavigate(activeFile.name, line)} onClose={() => setActiveTab(null)} />
-                )}
-                {activeTab === "tour" && (
-                  <TutorialSidebar isActive={true} isInline={true} currentText={content} onClose={() => setActiveTab(null)} onInsertCode={(code) => { setContent(code); if (editorRef.current) editorRef.current.setValue(code); showToast("Loaded lesson blueprint into editor!"); }} />
-                )}
-                {activeTab === "templates" && (
-                  <TemplateGallery isOpen={true} isInline={true} onClose={() => setActiveTab(null)} onSelect={handleSelectTemplate} onInsert={handleInsertSnippet} />
-                )}
-                {activeTab === "cheatsheet" && (
-                  <CheatsheetDrawer isOpen={true} isInline={true} onClose={() => setActiveTab(null)} onInsert={handleInsertSnippet} manualFns={manualFns} />
-                )}
-                {activeTab === "documentation" && (
-                  <DocumentationPortal isOpen={true} isInline={true} onClose={() => setActiveTab(null)} manualFns={manualFns} onInsert={handleInsertSnippet} searchQuery={documentationSearchQuery} setSearchQuery={setDocumentationSearchQuery} />
-                )}
-                {activeTab === "challenges" && (
-                  <ChallengeHub onClose={() => setActiveTab(null)} onSelectChallenge={(c, isSol) => { handleSelectChallenge(c, isSol); setActiveTab(null); }} />
-                )}
+              <div className="w-[100vw] md:w-[400px] h-full flex flex-col relative overflow-hidden">
+                <AnimatePresence mode="wait">
+                  {activeTab === "files" && (
+                    <motion.div
+                      key="files"
+                      initial={{ opacity: 0, y: 4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -4 }}
+                      transition={{ duration: 0.15 }}
+                      className="flex flex-col h-full overflow-hidden"
+                    >
+                      <FileExplorer 
+                        files={files} 
+                        activeFileId={activeFileId} 
+                        onFileSelect={handleFileSelect} 
+                        onFilesChange={setFiles} 
+                      />
+                      <FunctionNavigator onFunctionClick={handleFunctionJump} />
+                    </motion.div>
+                  )}
+                  {activeTab === "search" && (
+                    <motion.div
+                      key="search"
+                      initial={{ opacity: 0, y: 4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -4 }}
+                      transition={{ duration: 0.15 }}
+                      className="h-full flex flex-col"
+                    >
+                      <SearchSidebar files={files} onResultClick={handleSearchResultClick} onReplaceAll={handleReplaceAll} onClose={() => setActiveTab(null)} />
+                    </motion.div>
+                  )}
+                  {activeTab === "outline" && (
+                    <motion.div
+                      key="outline"
+                      initial={{ opacity: 0, y: 4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -4 }}
+                      transition={{ duration: 0.15 }}
+                      className="h-full flex flex-col"
+                    >
+                      <CodeOutlineSidebar content={content} onNavigate={(line) => handleNavigate(activeFile.name, line)} onClose={() => setActiveTab(null)} />
+                    </motion.div>
+                  )}
+                  {activeTab === "tour" && (
+                    <motion.div
+                      key="tour"
+                      initial={{ opacity: 0, y: 4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -4 }}
+                      transition={{ duration: 0.15 }}
+                      className="h-full flex flex-col"
+                    >
+                      <TutorialSidebar isActive={true} isInline={true} currentText={content} onClose={() => setActiveTab(null)} onInsertCode={(code) => { setContent(code); if (editorRef.current) editorRef.current.setValue(code); showToast("Loaded lesson blueprint into editor!"); }} />
+                    </motion.div>
+                  )}
+                  {activeTab === "templates" && (
+                    <motion.div
+                      key="templates"
+                      initial={{ opacity: 0, y: 4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -4 }}
+                      transition={{ duration: 0.15 }}
+                      className="h-full flex flex-col"
+                    >
+                      <TemplateGallery isOpen={true} isInline={true} onClose={() => setActiveTab(null)} onSelect={handleSelectTemplate} onInsert={handleInsertSnippet} />
+                    </motion.div>
+                  )}
+                  {activeTab === "cheatsheet" && (
+                    <motion.div
+                      key="cheatsheet"
+                      initial={{ opacity: 0, y: 4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -4 }}
+                      transition={{ duration: 0.15 }}
+                      className="h-full flex flex-col"
+                    >
+                      <CheatsheetDrawer isOpen={true} isInline={true} onClose={() => setActiveTab(null)} onInsert={handleInsertSnippet} manualFns={manualFns} />
+                    </motion.div>
+                  )}
+                  {activeTab === "documentation" && (
+                    <motion.div
+                      key="documentation"
+                      initial={{ opacity: 0, y: 4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -4 }}
+                      transition={{ duration: 0.15 }}
+                      className="h-full flex flex-col"
+                    >
+                      <DocumentationPortal isOpen={true} isInline={true} onClose={() => setActiveTab(null)} manualFns={manualFns} onInsert={handleInsertSnippet} searchQuery={documentationSearchQuery} setSearchQuery={setDocumentationSearchQuery} />
+                    </motion.div>
+                  )}
+                  {activeTab === "challenges" && (
+                    <motion.div
+                      key="challenges"
+                      initial={{ opacity: 0, y: 4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -4 }}
+                      transition={{ duration: 0.15 }}
+                      className="h-full flex flex-col"
+                    >
+                      <ChallengeHub onClose={() => setActiveTab(null)} onSelectChallenge={(c, isSol) => { handleSelectChallenge(c, isSol); setActiveTab(null); }} />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </motion.aside>
           )}
@@ -1173,12 +1245,20 @@ function App() {
             </div>
           </section>
 
-          {isConsoleOpen && (
-            <div className="h-64 flex flex-col min-w-0 border-t border-white/[0.04]">
-              <Console messages={consoleOutput} onClear={() => setConsoleOutput([])} onClose={() => setIsConsoleOpen(false)} onApplyQuickFix={handleApplyQuickFix} onCommand={handleConsoleCommand} onExpertAnalyze={handleExpertAnalyze} onJumpToError={(line, col) => handleNavigate(activeFile.name, line, col)}
-                 isSimulating={isSimulating} />
-            </div>
-          )}
+          <AnimatePresence>
+            {isConsoleOpen && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 256, opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ type: "spring", bounce: 0, duration: 0.35 }}
+                className="flex flex-col min-w-0 border-t border-white/[0.04] overflow-hidden bg-[#0b0c10]"
+              >
+                <Console messages={consoleOutput} onClear={() => setConsoleOutput([])} onClose={() => setIsConsoleOpen(false)} onApplyQuickFix={handleApplyQuickFix} onCommand={handleConsoleCommand} onExpertAnalyze={handleExpertAnalyze} onJumpToError={(line, col) => handleNavigate(activeFile.name, line, col)}
+                   isSimulating={isSimulating} />
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </main>
       
@@ -1209,42 +1289,57 @@ function App() {
         )}
       </AnimatePresence>
 
-      <AnimatePresence>
-        <Debugger 
-          isOpen={isDebugOpen}
-          onClose={() => setIsDebugOpen(false)}
-          isPaused={isPaused}
-          currentLine={currentDebugLine}
-          variables={debugVariables}
-          onContinue={handleContinue}
-          onStep={handleStep}
-          onStop={handleStop}
-        />
+       <AnimatePresence>
+        {isDebugOpen && (
+          <Debugger 
+            isOpen={isDebugOpen}
+            onClose={() => setIsDebugOpen(false)}
+            isPaused={isPaused}
+            currentLine={currentDebugLine}
+            variables={debugVariables}
+            onContinue={handleContinue}
+            onStep={handleStep}
+            onStop={handleStop}
+          />
+        )}
       </AnimatePresence>
 
       
-      <SettingsModal 
-        isOpen={isSettingsOpen} 
-        onClose={() => setIsSettingsOpen(false)} 
-        wordWrap={wordWrap} 
-        setWordWrap={setWordWrap} 
-        showMinimap={showMinimap} 
-        setShowMinimap={setShowMinimap} 
-        fontSize={fontSize} 
-        setFontSize={setFontSize} 
-        apiKey={apiKey}
-        setApiKey={setApiKey}
-        aiProvider={aiProvider}
-        setAiProvider={setAiProvider}
-      />
-      <GitHubSyncModal
-        isOpen={isGitHubModalOpen}
-        onClose={() => setIsGitHubModalOpen(false)}
-        files={files}
-        onFilesChange={setFiles}
-      />
+      <AnimatePresence>
+        {isSettingsOpen && (
+          <SettingsModal 
+            isOpen={isSettingsOpen} 
+            onClose={() => setIsSettingsOpen(false)} 
+            wordWrap={wordWrap} 
+            setWordWrap={setWordWrap} 
+            showMinimap={showMinimap} 
+            setShowMinimap={setShowMinimap} 
+            fontSize={fontSize} 
+            setFontSize={setFontSize} 
+            apiKey={apiKey}
+            setApiKey={setApiKey}
+            aiProvider={aiProvider}
+            setAiProvider={setAiProvider}
+          />
+        )}
+      </AnimatePresence>
 
-      <OnboardingTour isOpen={isTourOpen} onClose={() => setIsTourOpen(false)} />
+      <AnimatePresence>
+        {isGitHubModalOpen && (
+          <GitHubSyncModal
+            isOpen={isGitHubModalOpen}
+            onClose={() => setIsGitHubModalOpen(false)}
+            files={files}
+            onFilesChange={setFiles}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {isTourOpen && (
+          <OnboardingTour isOpen={isTourOpen} onClose={() => setIsTourOpen(false)} />
+        )}
+      </AnimatePresence>
       
       {toastMessage && (
         <div className="fixed bottom-6 right-6 bg-[#1e2128] border border-white/10 shadow-2xl rounded-lg px-4 py-3 flex items-center gap-3 text-sm text-[#e2e8f0] animate-in fade-in slide-in-from-bottom-4 z-50">
