@@ -23,6 +23,7 @@ import {
   Bug,
   Settings,
   ListTree,
+  Keyboard,
 } from "lucide-react";
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
@@ -36,6 +37,7 @@ import { SearchSidebar } from "./components/SearchSidebar";
 import { CodeOutlineSidebar } from "./components/CodeOutlineSidebar";
 import { GitHubSyncModal } from "./components/GitHubSyncModal";
 import { SettingsModal } from "./components/SettingsModal";
+import { ShortcutsModal } from "./components/ShortcutsModal";
 import { Console, type ConsoleMessage } from "./components/Console";
 import { OnboardingTour } from "./components/OnboardingTour";
 import { Tooltip } from "./components/Tooltip";
@@ -65,6 +67,23 @@ function App() {
   const [activeFileId, setActiveFileId] = useState<string>('1');
   const [openFileIds, setOpenFileIds] = useState<string[]>(['1']);
   const [isGitHubModalOpen, setIsGitHubModalOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<"files" | "search" | "tour" | "scenarios" | "challenges" | "templates" | "cheatsheet" | "documentation" | "outline" | null>("files");
+  const [autoSaveEnabled, setAutoSaveEnabled] = useState<boolean>(() => {
+    const saved = localStorage.getItem("cadence-workspace-auto-save");
+    return saved === null ? true : saved === "true";
+  });
+  const [isConsoleOpen, setIsConsoleOpen] = useState(false);
+  const [consoleHeight, setConsoleHeight] = useState(256);
+  const [isDraggingConsole, setIsDraggingConsole] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
+  const [consoleOutput, setConsoleOutput] = useState<ConsoleMessage[]>([]);
+  const [isTourOpen, setIsTourOpen] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3000);
+  };
 
   const handleFileSelect = (id: string) => {
     setActiveFileId(id);
@@ -173,13 +192,6 @@ function App() {
   };
 
   const [isCopied, setIsCopied] = useState(false);
-  const [activeTab, setActiveTab] = useState<"files" | "search" | "tour" | "scenarios" | "challenges" | "templates" | "cheatsheet" | "documentation" | "outline" | null>("files");
-
-
-  const [autoSaveEnabled, setAutoSaveEnabled] = useState<boolean>(() => {
-    const saved = localStorage.getItem("cadence-workspace-auto-save");
-    return saved === null ? true : saved === "true";
-  });
 
   useEffect(() => {
     localStorage.setItem("cadence-workspace-auto-save", autoSaveEnabled.toString());
@@ -197,7 +209,48 @@ function App() {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+      const key = e.key.toLowerCase();
+
+      // 1. Close active panel or find/replace widget on Escape
+      if (e.key === 'Escape') {
+        let closedSomething = false;
+        if (activeTab) {
+          setActiveTab(null);
+          closedSomething = true;
+        }
+        if (isConsoleOpen) {
+          setIsConsoleOpen(false);
+          closedSomething = true;
+        }
+        if (isSettingsOpen) {
+          setIsSettingsOpen(false);
+          closedSomething = true;
+        }
+        if (isShortcutsOpen) {
+          setIsShortcutsOpen(false);
+          closedSomething = true;
+        }
+        if (isGitHubModalOpen) {
+          setIsGitHubModalOpen(false);
+          closedSomething = true;
+        }
+        if (isTourOpen) {
+          setIsTourOpen(false);
+          closedSomething = true;
+        }
+        
+        dismissFindWidget();
+        if (editorRef.current) {
+          editorRef.current.focus();
+        }
+        
+        if (closedSomething) {
+          e.preventDefault();
+        }
+      }
+
+      // 2. Save on Ctrl+S / Cmd+S
+      if ((e.ctrlKey || e.metaKey) && key === 's' && !e.shiftKey) {
         e.preventDefault();
         if (!autoSaveEnabled) {
           set("cadence-workspace-files", files).catch(console.error);
@@ -205,13 +258,33 @@ function App() {
           setTimeout(() => setSaveStatus("saved"), 300);
           setTimeout(() => setSaveStatus("idle"), 2300);
           showToast("Project saved manually");
+        } else {
+          showToast("Auto-save is enabled");
         }
+      }
+
+      // 3. Toggle Files Sidebar on Ctrl+B / Cmd+B
+      if ((e.ctrlKey || e.metaKey) && key === 'b') {
+        e.preventDefault();
+        setActiveTab(prev => prev === 'files' ? null : 'files');
+      }
+
+      // 4. Toggle Global Search Sidebar on Ctrl+Shift+H
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && key === 'h') {
+        e.preventDefault();
+        setActiveTab(prev => prev === 'search' ? null : 'search');
+      }
+
+      // 5. Toggle diagnostic Console on Ctrl+` (backtick)
+      if ((e.ctrlKey || e.metaKey) && e.key === '`') {
+        e.preventDefault();
+        setIsConsoleOpen(prev => !prev);
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [autoSaveEnabled, files]);
+  }, [autoSaveEnabled, files, activeTab, isConsoleOpen, isSettingsOpen, isShortcutsOpen, isGitHubModalOpen, isTourOpen]);
   const [manualFns, setManualFns] = useState<any[]>([]);
 
   useEffect(() => {
@@ -234,15 +307,6 @@ function App() {
 
   const [isSimulating, setIsSimulating] = useState(false);
   const [proposedRefactor, setProposedRefactor] = useState<RefactorResult | null>(null);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const showToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3000);
-  };
-  const [isConsoleOpen, setIsConsoleOpen] = useState(false);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-    const [consoleOutput, setConsoleOutput] = useState<ConsoleMessage[]>([]);
-  const [isTourOpen, setIsTourOpen] = useState(false);
 
   useEffect(() => {
     const hasSeenTour = localStorage.getItem('skill_editor_tour_seen');
@@ -257,6 +321,70 @@ function App() {
   const saveTimeout = useRef<any>(null);
   const savedTimeout = useRef<any>(null);
   const consoleEndRef = useRef<HTMLDivElement>(null);
+
+  const dismissFindWidget = () => {
+    if (editorRef.current) {
+      try {
+        editorRef.current.trigger('keyboard', 'closeFindWidget', null);
+      } catch {}
+      try {
+        const findContrib = editorRef.current.getContribution('editor.contrib.findController');
+        if (findContrib && typeof findContrib.closeFindWidget === 'function') {
+          findContrib.closeFindWidget();
+        }
+      } catch {}
+    }
+  };
+
+  const stateRef = useRef({
+    activeTab,
+    isConsoleOpen,
+    isSettingsOpen,
+    isShortcutsOpen,
+    isGitHubModalOpen,
+    isTourOpen,
+    autoSaveEnabled,
+    files,
+  });
+
+  useEffect(() => {
+    stateRef.current = {
+      activeTab,
+      isConsoleOpen,
+      isSettingsOpen,
+      isShortcutsOpen,
+      isGitHubModalOpen,
+      isTourOpen,
+      autoSaveEnabled,
+      files,
+    };
+  }, [activeTab, isConsoleOpen, isSettingsOpen, isShortcutsOpen, isGitHubModalOpen, isTourOpen, autoSaveEnabled, files]);
+
+  const handleResizeStart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsDraggingConsole(true);
+    
+    const startY = e.clientY;
+    const startHeight = consoleHeight;
+    
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+      const deltaY = moveEvent.clientY - startY;
+      const newHeight = Math.max(100, Math.min(window.innerHeight - 200, startHeight - deltaY));
+      setConsoleHeight(newHeight);
+    };
+    
+    const handleMouseUp = () => {
+      setIsDraggingConsole(false);
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      if (editorRef.current) {
+        editorRef.current.layout();
+      }
+    };
+    
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  };
 
   const [breakpoints, setBreakpoints] = useState<Map<string, Set<number>>>(new Map());
   const [isDebugOpen, setIsDebugOpen] = useState(false);
@@ -440,7 +568,93 @@ function App() {
         ed.pushUndoStop();
       }
     });
+
+    editor.onKeyDown((e: any) => {
+      // 1. Escape key
+      if (e.keyCode === monaco.KeyCode.Escape) {
+        const { activeTab, isConsoleOpen, isSettingsOpen, isShortcutsOpen, isGitHubModalOpen, isTourOpen } = stateRef.current;
+        let closedSomething = false;
+
+        if (activeTab) {
+          setActiveTab(null);
+          closedSomething = true;
+        }
+        if (isConsoleOpen) {
+          setIsConsoleOpen(false);
+          closedSomething = true;
+        }
+        if (isSettingsOpen) {
+          setIsSettingsOpen(false);
+          closedSomething = true;
+        }
+        if (isShortcutsOpen) {
+          setIsShortcutsOpen(false);
+          closedSomething = true;
+        }
+        if (isGitHubModalOpen) {
+          setIsGitHubModalOpen(false);
+          closedSomething = true;
+        }
+        if (isTourOpen) {
+          setIsTourOpen(false);
+          closedSomething = true;
+        }
+
+        dismissFindWidget();
+
+        if (closedSomething) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+      }
+
+      // 2. Ctrl+S / Cmd+S
+      if (e.ctrlKey && e.keyCode === monaco.KeyCode.KeyS) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (!stateRef.current.autoSaveEnabled) {
+          set("cadence-workspace-files", stateRef.current.files).catch(console.error);
+          setSaveStatus("saving");
+          setTimeout(() => setSaveStatus("saved"), 300);
+          setTimeout(() => setSaveStatus("idle"), 2300);
+          showToast("Project saved manually");
+        } else {
+          showToast("Auto-save is enabled");
+        }
+      }
+
+      // 3. Toggle Files Sidebar on Ctrl+B / Cmd+B
+      if (e.ctrlKey && e.keyCode === monaco.KeyCode.KeyB) {
+        e.preventDefault();
+        e.stopPropagation();
+        setActiveTab(prev => prev === 'files' ? null : 'files');
+      }
+
+      // 4. Toggle Global Search Sidebar on Ctrl+Shift+H
+      if (e.ctrlKey && e.shiftKey && e.keyCode === monaco.KeyCode.KeyH) {
+        e.preventDefault();
+        e.stopPropagation();
+        setActiveTab(prev => prev === 'search' ? null : 'search');
+      }
+
+      // 5. Toggle diagnostic Console on Ctrl+` (backtick)
+      if (e.ctrlKey && e.keyCode === monaco.KeyCode.US_BACKTICK) {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsConsoleOpen(prev => !prev);
+      }
+    });
   };
+
+  useEffect(() => {
+    if (editorRef.current) {
+      setTimeout(() => {
+        if (editorRef.current) {
+          editorRef.current.layout();
+        }
+      }, 50);
+    }
+  }, [consoleHeight, isConsoleOpen, activeTab]);
 
   const handleInsertSnippet = (text: string) => {
     if (editorRef.current && monacoRef.current) {
@@ -1032,9 +1246,18 @@ function App() {
 
           <div className="w-[1px] h-5 bg-white/10 mx-1 hidden sm:block" />
 
-                    <button 
+          <button 
+            onClick={() => setIsShortcutsOpen(true)}
+            title="Keyboard Shortcuts Guide"
+            className="flex items-center gap-2 text-slate-300 hover:text-white hover:bg-white/5 px-2.5 py-1.5 rounded-lg text-sm font-medium transition-colors cursor-pointer"
+          >
+            <Keyboard size={16} className="text-slate-400" />
+            <span className="hidden md:inline">Shortcuts</span>
+          </button>
+
+          <button 
             onClick={() => setIsSettingsOpen(true)}
-            className="flex items-center gap-2 text-slate-300 hover:text-white hover:bg-white/5 px-2.5 py-1.5 rounded-lg text-sm font-medium transition-colors"
+            className="flex items-center gap-2 text-slate-300 hover:text-white hover:bg-white/5 px-2.5 py-1.5 rounded-lg text-sm font-medium transition-colors cursor-pointer"
           >
             <Settings size={16} className="text-slate-400" />
             <span className="hidden md:inline">Settings</span>
@@ -1245,13 +1468,23 @@ function App() {
             </div>
           </section>
 
+          {isConsoleOpen && (
+            <div 
+              onMouseDown={handleResizeStart}
+              className="h-1.5 w-full bg-transparent hover:bg-indigo-500/50 cursor-ns-resize transition-colors relative z-40 group flex items-center justify-center select-none shrink-0"
+            >
+              <div className="absolute inset-x-0 h-[1px] bg-white/5 group-hover:bg-indigo-500/50 transition-colors" />
+              <div className="w-12 h-1 bg-white/15 group-hover:bg-indigo-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
+            </div>
+          )}
+
           <AnimatePresence>
             {isConsoleOpen && (
               <motion.div
                 initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 256, opacity: 1 }}
+                animate={{ height: consoleHeight, opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
-                transition={{ type: "spring", bounce: 0, duration: 0.35 }}
+                transition={isDraggingConsole ? { duration: 0 } : { type: "spring", bounce: 0, duration: 0.35 }}
                 className="flex flex-col min-w-0 border-t border-white/[0.04] overflow-hidden bg-[#0b0c10]"
               >
                 <Console messages={consoleOutput} onClear={() => setConsoleOutput([])} onClose={() => setIsConsoleOpen(false)} onApplyQuickFix={handleApplyQuickFix} onCommand={handleConsoleCommand} onExpertAnalyze={handleExpertAnalyze} onJumpToError={(line, col) => handleNavigate(activeFile.name, line, col)}
@@ -1320,6 +1553,15 @@ function App() {
             setApiKey={setApiKey}
             aiProvider={aiProvider}
             setAiProvider={setAiProvider}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {isShortcutsOpen && (
+          <ShortcutsModal 
+            isOpen={isShortcutsOpen}
+            onClose={() => setIsShortcutsOpen(false)}
           />
         )}
       </AnimatePresence>
