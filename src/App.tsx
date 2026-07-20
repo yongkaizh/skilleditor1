@@ -926,8 +926,8 @@ function App() {
   };
 
   const handleStop = () => {
-    // Basic stop: just resolve the promise but let the interpreter finish quickly or throw
-    // For this simple version, we'll just stop the debug session UI
+    // Cleanly abort running interpreter session
+    skillInterpreter.abort();
     setIsDebugOpen(false);
     setIsPaused(false);
     handleContinue();
@@ -1507,6 +1507,10 @@ function App() {
                 <button onClick={() => handleRun(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 hover:text-emerald-300 border border-emerald-500/20 transition-all text-[11px] font-bold tracking-wider uppercase">
                   <Bug size={14} />
                   <span className="hidden sm:inline">Debug</span>
+                </button>
+                <button onClick={handleRefactorCode} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-violet-500/10 hover:bg-violet-500/20 text-violet-400 hover:text-violet-300 border border-violet-500/20 transition-all text-[11px] font-bold tracking-wider uppercase">
+                  <Sparkles size={14} />
+                  <span className="hidden sm:inline">Refactor</span>
                 </button>
                 
                 {challenges.find(c => activeFile?.name === `${c.id}.il` || activeFile?.name === `${c.id}-sol.il`)?.verificationCall && (

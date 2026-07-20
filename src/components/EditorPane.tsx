@@ -116,7 +116,7 @@ export const EditorPane: React.FC<EditorPaneProps> = ({
           }
         };
         ast.forEach(visitNode);
-      } catch (e) {
+      } catch {
         // Ignore parser errors during typing
       }
       

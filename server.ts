@@ -97,11 +97,11 @@ async function startServer() {
 
     try {
       let text = await callAI(provider, apiKey, prompt);
-      text = text.replace(/^\`\`\`json/m, '').replace(/\`\`\`$/m, '').trim();
+      text = text.replace(/^```json/m, '').replace(/```$/m, '').trim();
       let parsed;
       try {
         parsed = JSON.parse(text);
-      } catch (e) {
+      } catch {
         // Fallback if AI didn't output JSON properly
         parsed = { reply: text, newCode: null };
       }

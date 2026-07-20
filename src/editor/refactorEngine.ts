@@ -39,9 +39,7 @@ export const refactorSkillCode = (code: string): RefactorResult => {
   let addedPrefixes = false;
   geoFuncs.forEach(func => {
     const regex = new RegExp(`(?<!db|le|hi|ge|tech|rod)(?<![a-zA-Z0-9_])${func}\\(`, 'g');
-    let replacedFunc = false;
-    refactored = refactored.replace(regex, (match) => {
-      replacedFunc = true;
+    refactored = refactored.replace(regex, () => {
       addedPrefixes = true;
       return `db${func}(`;
     });

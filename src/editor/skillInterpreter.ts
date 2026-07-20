@@ -69,9 +69,15 @@ class SkillInterpreter {
   private breakpoints: Set<number> = new Set();
   private onPause?: (line: number) => Promise<void>;
   private currentEnv?: Environment;
+  private isAborted: boolean = false;
+  private evalCounter: number = 0;
 
   constructor() {
     this.initBuiltins();
+  }
+
+  public abort() {
+    this.isAborted = true;
   }
 
   public getVariables() {
@@ -318,6 +324,8 @@ class SkillInterpreter {
     this.breakpoints = breakpoints;
     this.onPause = onPause;
     this.currentEnv = undefined;
+    this.isAborted = false;
+    this.evalCounter = 0;
     
     const oldOutput = this.onOutput;
     this.onOutput = (text) => {
@@ -547,6 +555,13 @@ class SkillInterpreter {
   }
 
   private async checkBreakpoint(line: number, env?: Environment) {
+      if (this.isAborted) {
+          throw new Error("*Error* Execution aborted by user");
+      }
+      this.evalCounter++;
+      if (this.evalCounter % 300 === 0) {
+          await new Promise<void>(resolve => setTimeout(resolve, 0));
+      }
       if (this.breakpoints.has(line) || this.isStepMode) {
           this.isStepMode = false;
           this.currentEnv = env;
