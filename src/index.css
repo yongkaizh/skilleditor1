@@ -63,7 +63,7 @@
   border: 1px solid rgba(255, 255, 255, 0.1) !important;
   border-radius: 6px !important;
   background-color: #1a1c23 !important;
-  z-index: 50 !important;
+  z-index: 9999 !important;
 }
 
 /* Ensure that Monaco hovers, tooltips and suggestions have proper z-index and display */
