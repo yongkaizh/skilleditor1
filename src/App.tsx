@@ -516,6 +516,53 @@ function App() {
     setTimeout(() => setIsCopied(false), 2000);
   };
 
+  
+  const handleVerify = async () => {
+    if (isSimulating || !activeFile) return;
+    const activeChallenge = challenges.find(c => activeFile.name === `${c.id}.il` || activeFile.name === `${c.id}-sol.il`);
+    if (!activeChallenge || !activeChallenge.verificationCall || !activeChallenge.exampleInput) return;
+
+    const getTimestamp = () => new Date().toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    setIsConsoleOpen(true);
+    setIsSimulating(true);
+
+    setConsoleOutput(prev => [...prev, { 
+      id: uuidv4(), 
+      timestamp: getTimestamp(), 
+      type: "info", 
+      text: `--- Verifying ${activeChallenge.title} ---` 
+    }]);
+
+    setTimeout(async () => {
+      let finalOut = "";
+      const handleOut = (text) => { finalOut += text + "\n"; setConsoleOutput(prev => [...prev, { id: uuidv4(), timestamp: getTimestamp(), type: "output", text }]); };
+      skillInterpreter.setOutputHandler(handleOut);
+
+      try {
+        const fullCode = `${activeFile.content}\n\n${activeChallenge.exampleInput}\nprintln(${activeChallenge.verificationCall})`;
+        const res = await skillInterpreter.evaluate(fullCode);
+        
+        let expected = String(activeChallenge.exampleOutput).trim().split(';')[0].trim();
+        let actual = String(res.value).trim();
+        if (expected.startsWith("'")) {
+           // Basic unquoting for comparison if expected is quoted
+           expected = expected.replace(/^'/, '');
+           actual = actual.replace(/^'/, '');
+        }
+        
+        const passed = (actual === expected);
+        if (passed) {
+            setConsoleOutput(prev => [...prev, { id: uuidv4(), timestamp: getTimestamp(), type: "success", text: `\n✅ SUCCESS: Challenge ${activeChallenge.title} passed! Output matched expected: ${expected}` }]);
+        } else {
+            setConsoleOutput(prev => [...prev, { id: uuidv4(), timestamp: getTimestamp(), type: "error", text: `\n❌ FAILED: Output ${actual} did not match expected ${expected}` }]);
+        }
+      } catch (err) {
+        setConsoleOutput(prev => [...prev, { id: uuidv4(), timestamp: getTimestamp(), type: "error", text: err.message || String(err) }]);
+      }
+      setIsSimulating(false);
+    }, 100);
+  };
+
   const handleRun = async (debugMode = false) => {
     if (isSimulating) return;
     const getTimestamp = () => new Date().toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
@@ -1106,6 +1153,14 @@ function App() {
                   <Bug size={14} />
                   <span className="hidden sm:inline">Debug</span>
                 </button>
+                
+                {challenges.find(c => activeFile?.name === `${c.id}.il` || activeFile?.name === `${c.id}-sol.il`)?.verificationCall && (
+                  <button onClick={handleVerify} disabled={isSimulating} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all text-[11px] font-bold tracking-wider uppercase border ${isSimulating ? 'bg-amber-500/10 text-amber-500/50 border-amber-500/10 cursor-not-allowed' : 'bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 border-amber-500/20 shadow-amber-500/10 hover:shadow-amber-500/20 shadow-lg'}`}>
+                    <CheckCircle2 size={14} />
+                    <span className="hidden sm:inline">Verify Solution</span>
+                  </button>
+                )}
+
                 <button id="run-skill-btn" onClick={() => handleRun(false)} disabled={isSimulating} className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg transition-all text-[11px] font-bold tracking-wider uppercase shadow-lg ${isSimulating ? 'bg-indigo-500/50 text-white/50 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-500/20 hover:shadow-indigo-500/40'}`}>
                   {isSimulating ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />}
                   <span className="hidden sm:inline">{isSimulating ? "Running..." : "Run SKILL"}</span>

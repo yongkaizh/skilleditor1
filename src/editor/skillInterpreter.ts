@@ -118,22 +118,37 @@ class SkillInterpreter {
     });
     this.globalEnv.define('==', (a: any, b: any) => a === b);
     this.globalEnv.define('!=', (a: any, b: any) => a !== b);
+    this.globalEnv.define('!', (a: any) => a === null || a === false);
+    this.globalEnv.define('null', (a: any) => a === null || a === false);
     this.globalEnv.define('makeTable', (name?: any, defVal?: any) => {
       if (name !== undefined && typeof name !== 'string' && typeof name !== 'symbol') {
           throw new Error("*Error* makeTable: first argument must be a string or symbol");
       }
-      return {}; 
+      return new Proxy({}, { get: function(target, prop) { return prop in target ? target[prop] : defVal; } });
     });
     this.globalEnv.define('list', (...args: any[]) => args);
+    this.globalEnv.define('abs', (a: any) => {
+      if (typeof a !== 'number') throw new Error("*Error* abs: not a number");
+      return Math.abs(a);
+    });
+    this.globalEnv.define('float', (a: any) => {
+      if (typeof a !== 'number') throw new Error("*Error* float: not a number");
+      return a;
+    });
     this.globalEnv.define('car', (list: any[]) => {
       if (list === null || list === undefined || list === 'nil') return null;
       if (!Array.isArray(list)) throw new Error("*Error* car: argument must be a list");
       return list[0];
     });
+    this.globalEnv.define('cadr', (list: any[]) => {
+      if (list === null || list === 'nil') return null;
+      if (!Array.isArray(list)) throw new Error("*Error* cadr: not a list");
+      return list.length > 1 ? list[1] : null;
+    });
     this.globalEnv.define('cdr', (list: any[]) => {
       if (list === null || list === undefined || list === 'nil') return null;
       if (!Array.isArray(list)) throw new Error("*Error* cdr: argument must be a list");
-      return list.slice(1);
+      return list.length <= 1 ? null : list.slice(1);
     });
     this.globalEnv.define('nth', (n: number, list: any[]) => {
       if (list === null || list === undefined || list === 'nil') return null;
@@ -558,7 +573,7 @@ private async _evaluateExpr(expr: ASTNode, env: Environment): Promise<any> {
               if (envVal === undefined) {
                   if (expr.name === 't') return true;
                   if (expr.name === 'nil') return false;
-                  throw new Error(`*Error* eval: unbound variable - ${expr.name}`);
+                  throw new Error(`*Error* eval: unbound variable - ${expr.name} at line ${expr.line}\nvarList: ${env.get('varList')}`);
               }
               return envVal;
           case 'quote':

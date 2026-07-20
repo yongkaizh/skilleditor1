@@ -1,4 +1,5 @@
 export interface Challenge {
+  verificationCall?: string;
   id: string;
   title: string;
   difficulty: 'Hard' | 'Expert';
@@ -633,7 +634,7 @@ procedure( calculateWorstIRDrop(N M sinks)
     solutionCode: "; Solution: Elmore Delay Zero-Skew Binary Search\nprocedure( balanceDME(t1_d t2_d c1 c2 wR wC L)\n  let( (x)\n    let( (low high mid d1 d2 (tol 1e-5))\n      low = 0.0 high = L\n      while( high - low > tol\n        mid = (low + high) / 2.0\n        d1 = t1_d + wR * mid * (c1 + wC * mid / 2.0)\n        d2 = t2_d + wR * (L - mid) * (c2 + wC * (L - mid) / 2.0)\n        if( d1 < d2 then low = mid else high = mid )\n      )\n      mid\n    )\n  )\n)"
   },
   {
-    id: 'boolean-sat-3',
+    id: 'boolean-sat-3', verificationCall: 'solve3SAT(clauses vars)',
     title: 'Logic Equivalence (3-SAT Solver)',
     difficulty: 'Hard',
     tags: ['Verification', 'Logic', 'Backtracking'],
@@ -647,10 +648,10 @@ procedure( calculateWorstIRDrop(N M sinks)
     exampleInput: "vars = '(1 2 3)\nclauses = '( (1 2 -3) (-1 -2 3) (1 -2 3) )",
     exampleOutput: "t",
     initialCode: "procedure( solve3SAT(clauses vars)\n  ; Backtracking solver\n)",
-    solutionCode: "; Solution: Simple Backtracking for 3-SAT\nprocedure( solve3SAT(clauses vars)\n  let( (assign)\n    assign = makeTable(\"a\" -1)\n    procedure( check(cls asgn)\n      let( (ok) ok=t\n        foreach( c cls\n          let( (c_ok unknown) c_ok=nil unknown=nil\n            foreach( l c\n              let( (var sign val)\n                var = abs(l) sign = if( l>0 then 1 else 0 )\n                val = asgn[var]\n                if( val == -1 then unknown = t\n                else if( val == sign then c_ok = t ) )\n              )\n            )\n            if( !c_ok && !unknown then ok = nil )\n          )\n        )\n        ok\n      )\n    )\n    procedure( backtrack(varList)\n      if( !varList then t\n      else\n        let( (v res) v = car(varList)\n          assign[v] = 0\n          if( check(clauses assign) then if( backtrack(cdr(varList)) then res = t ) )\n          if( !res then\n            assign[v] = 1\n            if( check(clauses assign) then if( backtrack(cdr(varList)) then res = t ) )\n          )\n          if( !res then assign[v] = -1 )\n          res\n        )\n      )\n    )\n    backtrack(vars)\n  )\n)"
+    solutionCode: "; Solution: Simple Backtracking for 3-SAT\nprocedure( solve3SAT(clauses vars)\n  let( (assign)\n    assign = makeTable(\"a\" -1)\n    procedure( check(cls asgn)\n      let( (ok) ok=t\n        foreach( c cls\n          let( (c_ok unknown) c_ok=nil unknown=nil\n            foreach( l c\n              let( (var sign val)\n                var = abs(l) sign = if( l>0 then 1 else 0 )\n                val = asgn[var]\n                if( val == -1 then unknown = t\n                else if( val == sign then c_ok = t ) )\n              )\n            )\n            if( null(c_ok) && null(unknown) then ok = nil )\n          )\n        )\n        ok\n      )\n    )\n    procedure( backtrack(varList)\n      if( null(varList) then t\n      else\n        let( (v res) v = car(varList)\n          assign[v] = 0\n          if( check(clauses assign) then if( backtrack(cdr(varList)) then res = t ) )\n          if( null(res) then\n            assign[v] = 1\n            if( check(clauses assign) then if( backtrack(cdr(varList)) then res = t ) )\n          )\n          if( null(res) then assign[v] = -1 )\n          res\n        )\n      )\n    )\n    backtrack(vars)\n  )\n)"
   },
   {
-    id: 'metal-fill-insertion',
+    id: 'metal-fill-insertion', verificationCall: 'maxMetalDensity(grid W)',
     title: 'Metal Fill Density (Sliding Window)',
     difficulty: 'Hard',
     tags: ['DFM', 'Density', 'Sliding Window'],
@@ -667,7 +668,7 @@ procedure( calculateWorstIRDrop(N M sinks)
   }
 
   ,{
-    id: 'a-star-router',
+    id: 'a-star-router', verificationCall: 'routeAStar(sourcePt targetPt obstacles 1)',
     title: 'Obstacle-Aware Maze Router (A*)',
     difficulty: 'Expert',
     tags: ['Algorithms', 'Pathfinding', 'Graph', 'Routing'],
@@ -683,7 +684,7 @@ procedure( calculateWorstIRDrop(N M sinks)
     initialCode: "; Scenario: Obstacle-Aware Maze Router (A*)\n; Goal: Route from sourcePt to targetPt avoiding obstacles.\nprocedure( routeAStar(sourcePt targetPt obstacles gridStep)\n  let( (openSet closedSet cameFrom path)\n    ; Helper: Manhattan Distance Heuristic\n    procedure( hScore(p1 p2)\n      abs(car(p1) - car(p2)) + abs(cadr(p1) - cadr(p2))\n    )\n    \n    ; 1. Initialize Priority Queue\n    ; 2. A* Search Loop (explore neighbors, update costs)\n    ; 3. Reconstruct Path\n    \n    path\n  )\n)"
   },
   {
-    id: 'via-stitching',
+    id: 'via-stitching', verificationCall: 'generateViaStitching(m1Box m2Box viaSize viaSpacing enclosure)',
     title: 'Automatic Via-Stitching',
     difficulty: 'Expert',
     tags: ['Geometry', 'DRC', 'Layout'],
@@ -698,7 +699,7 @@ procedure( calculateWorstIRDrop(N M sinks)
     initialCode: "; Scenario: Automatic Via-Stitching\n; Goal: Write a procedure 'generateViaStitching' that returns a list of coordinates.\nprocedure( generateViaStitching(m1Box m2Box viaSize viaSpacing enclosure)\n  let( (overlap xStart yStart xEnd yEnd vias)\n    ; 1. Calculate Overlap BBox\n    ; 2. Apply Enclosure Margins\n    ; 3. Generate Grid of Vias\n    \n    vias\n  )\n)"
   },
   {
-    id: 'prop-cleanup',
+    id: 'prop-cleanup', verificationCall: 'cleanupHierarchy(cvId pattern protected)',
     title: 'Hierarchical Cell Property Cleanup',
     difficulty: 'Expert',
     tags: ['Hierarchy', 'Database', 'Regex'],
@@ -713,7 +714,7 @@ procedure( calculateWorstIRDrop(N M sinks)
     initialCode: "; Scenario: Hierarchical Cell Property Cleanup\n; Goal: Write 'cleanupHierarchy' to recursively scrub properties.\nprocedure( cleanupHierarchy(cvId pattern protected)\n  let( (regex deletedCount visited)\n    regex = pcreCompile(pattern)\n    deletedCount = 0\n    visited = makeTable(\"vis\" nil)\n    ; Implement recursive traversal and property deletion logic\n    deletedCount\n  )\n)"
   },
   {
-    id: 'power-mesh',
+    id: 'power-mesh', verificationCall: 'estimateMeshResistance(segments startNode endNode)',
     title: 'Power Mesh Resistance Estimator',
     difficulty: 'Expert',
     tags: ['Analysis', 'Graph', 'Physics'],
