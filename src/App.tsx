@@ -47,6 +47,7 @@ import { TemplateGallery } from "./components/TemplateGallery";
 import { TutorialSidebar } from "./components/TutorialSidebar";
 import { Debugger } from "./components/Debugger";
 import { ChallengeHub } from "./components/ChallengeHub";
+import { challenges } from "./data/challenges";
 import { projectState } from "./editor/projectState";
 import { parseManual } from "./editor/manualParser";
 import { skillInterpreter } from "./editor/skillInterpreter";

@@ -406,6 +406,178 @@ procedure( calculatePhysicalResistance(cv startPoint endPoint techFile)
 ; tech["Via1"] = list(nil 'contactRes 0.15)
 ; calculatePhysicalResistance(geGetWindowCellView() 0:0 50:50 tech)`,
   },
+  {
+    id: "drc_spacing",
+    title: "DRC Spacing Checker",
+    category: "Analysis",
+    icon: <Database size={24} className="text-yellow-400" />,
+    desc: "Find spacing violations between shapes on a given layer.",
+    content: `; DRC Minimum Spacing Checker
+procedure( checkDrcSpacing(cv layerName minSpacing)
+    let( (rects violations bbox1 bbox2 x1_1 y1_1 x2_1 y2_1 x1_2 y1_2 x2_2 y2_2 dx dy dist)
+        rects = setof(s cv~>shapes s~>layerName == layerName && s~>objType == "rect")
+        violations = 0
+        printf("--- Checking spacing on Layer: %s (Min: %.3fu) ---\\n" layerName minSpacing)
+        
+        for( i 0 length(rects)-2
+            for( j i+1 length(rects)-1
+                bbox1 = nth(i rects)~>bBox
+                bbox2 = nth(j rects)~>bBox
+                
+                x1_1 = xCoord(lowerLeft(bbox1))  y1_1 = yCoord(lowerLeft(bbox1))
+                x2_1 = xCoord(upperRight(bbox1)) y2_1 = yCoord(upperRight(bbox1))
+                
+                x1_2 = xCoord(lowerLeft(bbox2))  y1_2 = yCoord(lowerLeft(bbox2))
+                x2_2 = xCoord(upperRight(bbox2)) y2_2 = yCoord(upperRight(bbox2))
+                
+                ; Compute horizontal & vertical separation (0 or negative if overlapping)
+                dx = max(0.0 max(x1_1 - x2_2 x1_2 - x2_1))
+                dy = max(0.0 max(y1_1 - y2_2 y1_2 - y2_1))
+                
+                dist = sqrt(dx*dx + dy*dy)
+                if( dist > 0.0 && dist < minSpacing then
+                    printf("  *VIOLATION* Shapes %d and %d are too close! Spacing: %.3fu\\n" i j dist)
+                    violations++
+                )
+            )
+        )
+        printf("DRC completed. Found %d spacing violations.\\n" violations)
+        violations
+    )
+)
+; Usage: checkDrcSpacing(geGetWindowCellView() "M1" 0.25)`,
+  },
+  {
+    id: "align_shapes",
+    title: "Horizontal/Vertical Shape Aligner",
+    category: "Layout",
+    icon: <Layers size={24} className="text-violet-400" />,
+    desc: "Align selected layout shapes to the left, right, top, or bottom of the first selected shape.",
+    content: `; Shape Aligner Tool
+procedure( alignSelectedShapes(alignType)
+    let( (selObjs refObj refBbox refVal targetObj targetBbox curWidth curHeight dx dy)
+        selObjs = geGetSelSet()
+        if( length(selObjs) < 2 then
+            printf("*Warning* Please select at least 2 shapes to align!\\n")
+        else
+            refObj = car(selObjs)
+            refBbox = refObj~>bBox
+            
+            ; Align types: "left", "right", "bottom", "top"
+            foreach( obj cdr(selObjs)
+                refBbox = refObj~>bBox
+                targetBbox = obj~>bBox
+                curWidth = xCoord(upperRight(targetBbox)) - xCoord(lowerLeft(targetBbox))
+                curHeight = yCoord(upperRight(targetBbox)) - yCoord(lowerLeft(targetBbox))
+                dx = 0.0  dy = 0.0
+                
+                if( alignType == "left" then
+                    dx = xCoord(lowerLeft(refBbox)) - xCoord(lowerLeft(targetBbox))
+                else if( alignType == "right" then
+                    dx = xCoord(upperRight(refBbox)) - xCoord(upperRight(targetBbox))
+                else if( alignType == "bottom" then
+                    dy = yCoord(lowerLeft(refBbox)) - yCoord(lowerLeft(targetBbox))
+                else if( alignType == "top" then
+                    dy = yCoord(upperRight(refBbox)) - yCoord(upperRight(targetBbox))
+                )
+                
+                ; Move target object by delta offsets
+                if( dx != 0.0 || dy != 0.0 then
+                    dbMoveObject(obj geGetWindowCellView() list(dx:dy "R0"))
+                )
+            )
+            printf("*Success* Aligned %d shapes to the %s boundary\\n" length(selObjs)-1 alignType)
+         )
+    )
+)
+; Usage: alignSelectedShapes("left")`,
+  },
+  {
+    id: "schematic_replacer",
+    title: "Schematic Instance Replacer",
+    category: "UI",
+    icon: <FormInput size={24} className="text-sky-400" />,
+    desc: "Find all schematic instances matching an old cell name and swap them with a new cell master.",
+    content: `; Find and replace schematic instances
+procedure( replaceSchematicInstances(cvId oldCellName newLibName newCellName)
+    let( (newMaster count)
+        newMaster = dbOpenCellViewByType(newLibName newCellName "symbol" "" "r")
+        count = 0
+        if( newMaster then
+            foreach( inst cvId~>instances
+                if( inst~>cellName == oldCellName then
+                    inst~>master = newMaster
+                    count++
+                )
+            )
+            printf("*Success* Swapped %d instances of '%s' with '%s/%s' symbol\\n" count oldCellName newLibName newCellName)
+            dbClose(newMaster)
+        else
+            printf("*Error* Could not find symbol master for %s/%s\\n" newLibName newCellName)
+        )
+    )
+)
+; Usage: replaceSchematicInstances(geGetWindowCellView() "nfet_old" "analogLib" "nmos4")`,
+  },
+  {
+    id: "via_stitching",
+    title: "Auto Via Stitching Tool",
+    category: "Layout",
+    icon: <Cpu size={24} className="text-pink-400" />,
+    desc: "Find overlapping bounding boxes of two rectangular shapes and generate a stitched via array in the overlap.",
+    content: `; Automatic Via Stitching between Metal1 and Metal2
+procedure( generateViaStitching(shape1 shape2 viaSize viaSpacing enclosure)
+    let( (cv bbox1 bbox2 x1 y1 x2 y2 overlapBbox ovX1 ovY1 ovX2 ovY2 rows cols width height startX startY)
+        cv = geGetWindowCellView()
+        bbox1 = shape1~>bBox
+        bbox2 = shape2~>bBox
+        
+        ; Find intersection bounding box
+        ovX1 = max(xCoord(lowerLeft(bbox1)) xCoord(lowerLeft(bbox2)))
+        ovY1 = max(yCoord(lowerLeft(bbox1)) yCoord(lowerLeft(bbox2)))
+        ovX2 = min(xCoord(upperRight(bbox1)) xCoord(upperRight(bbox2)))
+        ovY2 = min(yCoord(upperRight(bbox1)) yCoord(upperRight(bbox2)))
+        
+        if( ovX1 < ovX2 && ovY1 < ovY2 then
+            ; Apply enclosure/margin constraints
+            ovX1 = ovX1 + enclosure
+            ovY1 = ovY1 + enclosure
+            ovX2 = ovX2 - enclosure
+            ovY2 = ovY2 - enclosure
+            
+            width = ovX2 - ovX1
+            height = ovY2 - ovY1
+            
+            if( width >= viaSize && height >= viaSize then
+                ; Calculate optimal rows and columns for via grids
+                cols = floor((width - viaSize) / (viaSize + viaSpacing)) + 1
+                rows = floor((height - viaSize) / (viaSize + viaSpacing)) + 1
+                
+                ; Center the via matrix inside the overlap region
+                startX = ovX1 + (width - (cols * viaSize + (cols - 1) * viaSpacing)) / 2.0
+                startY = ovY1 + (height - (rows * viaSize + (rows - 1) * viaSpacing)) / 2.0
+                
+                for( r 0 rows-1
+                    for( c 0 cols-1
+                        dbCreateRect(cv list("Via1" "drawing") 
+                            list(
+                                (startX + c * (viaSize + viaSpacing)):(startY + r * (viaSize + viaSpacing))
+                                (startX + c * (viaSize + viaSpacing) + viaSize):(startY + r * (viaSize + viaSpacing) + viaSize)
+                            )
+                        )
+                    )
+                )
+                printf("*Success* Generated a %dx%d via stitching grid inside overlap area\\n" rows cols)
+            else
+                printf("*Warning* Overlap region too small for via stitching!\\n")
+            )
+        else
+            printf("*Warning* Shapes do not physically overlap!\\n")
+        )
+    )
+)
+; Usage: generateViaStitching(rect1 rect2 0.4 0.3 0.1)`,
+  },
 ];
 
 export const TemplateGallery: React.FC<TemplateGalleryProps> = ({
