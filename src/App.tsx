@@ -65,7 +65,7 @@ function App() {
   const [activeFileId, setActiveFileId] = useState<string>('1');
   const [openFileIds, setOpenFileIds] = useState<string[]>(['1']);
   const [isGitHubModalOpen, setIsGitHubModalOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<"files" | "search" | "tour" | "scenarios" | "challenges" | "templates" | "cheatsheet" | "documentation" | "outline" | null>("files");
+  const [activeTab, setActiveTab] = useState<"files" | "search" | "tour" | "scenarios" | "challenges" | "templates" | "cheatsheet" | "documentation" | "outline" | null>(null);
   const [autoSaveEnabled, setAutoSaveEnabled] = useState<boolean>(() => {
     const saved = localStorage.getItem("cadence-workspace-auto-save");
     return saved === null ? true : saved === "true";
