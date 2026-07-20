@@ -1,7 +1,20 @@
+
+export class SkillError extends Error {
+    line?: number;
+    col?: number;
+    constructor(message: string, line?: number, col?: number) {
+        super(message);
+        this.line = line;
+        this.col = col;
+        this.name = "SkillError";
+    }
+}
 export interface EvaluationResult {
   value: any;
   output: string[];
   type: 'success' | 'error';
+  line?: number;
+  col?: number;
 }
 
 class ReturnException extends Error {
@@ -41,13 +54,13 @@ class Environment {
 }
 
 export type ASTNode = 
-  | { type: 'number', value: number, line: number }
-  | { type: 'string', value: string, line: number }
-  | { type: 'boolean', value: boolean, line: number }
-  | { type: 'symbol', name: string, line: number }
-  | { type: 'list', elements: ASTNode[], line: number }
-  | { type: 'call', fn: string, args: ASTNode[], line: number }
-  | { type: 'quote', value: ASTNode, line: number };
+  | { type: 'number', value: number, line: number, col: number }
+  | { type: 'string', value: string, line: number, col: number }
+  | { type: 'boolean', value: boolean, line: number, col: number }
+  | { type: 'symbol', name: string, line: number, col: number }
+  | { type: 'list', elements: ASTNode[], line: number, col: number }
+  | { type: 'call', fn: string, args: ASTNode[], line: number, col: number }
+  | { type: 'quote', value: ASTNode, line: number, col: number };
 
 class SkillInterpreter {
   private globalEnv = new Environment();
@@ -285,89 +298,89 @@ class SkillInterpreter {
       return { value, output, type: 'success' };
     } catch (err: any) {
       this.onOutput = oldOutput;
-      return { value: null, output: [...output, err.message], type: 'error' };
+      return { value: null, output: [...output, err.message], type: 'error', line: err.line, col: err.col };
     }
   }
 
-  public tokenize(code: string) {
+    public tokenize(code: string) {
     let tokens: any[] = [];
     let i = 0;
     let line = 1;
+    let col = 1;
     let spaceBefore = false;
     while (i < code.length) {
         let char = code[i];
-        if (char === '\n') { line++; i++; spaceBefore = true; continue; }
-        if (char === ' ' || char === '\t' || char === '\r' || char === ',') { i++; spaceBefore = true; continue; }
+        if (char === '\n') { line++; col = 1; i++; spaceBefore = true; continue; }
+        if (char === ' ' || char === '\t' || char === '\r' || char === ',') { col++; i++; spaceBefore = true; continue; }
         if (char === ';') {
-            while (i < code.length && code[i] !== '\n') i++;
+            while (i < code.length && code[i] !== '\n') { i++; col++; }
             spaceBefore = true;
             continue;
         }
-
         let currSpaceBefore = spaceBefore;
         spaceBefore = false;
-
+        
+        let startCol = col;
         if (char === '"') {
             let str = '"';
-            i++;
+            i++; col++;
             while (i < code.length) {
                 str += code[i];
-                if (code[i] === '"' && code[i-1] !== '\\') { i++; break; }
-                if (code[i] === '\n') line++;
+                if (code[i] === '"' && code[i-1] !== '\\') { i++; col++; break; }
+                if (code[i] === '\n') { line++; col = 1; } else { col++; }
                 i++;
             }
-            tokens.push({val: str, line, spaceBefore: currSpaceBefore});
+            tokens.push({val: str, line, col: startCol, spaceBefore: currSpaceBefore});
             continue;
         }
         if (char === '(' || char === ')' || char === '\'' || char === '[' || char === ']') {
-            tokens.push({val: char, line, spaceBefore: currSpaceBefore});
-            i++;
+            tokens.push({val: char, line, col: startCol, spaceBefore: currSpaceBefore});
+            i++; col++;
             continue;
         }
         let objMatch = code.substring(i).match(/^[a-zA-Z_][a-zA-Z0-9_]*:0x[0-9a-fA-F]+/i);
         if (objMatch) {
-            tokens.push({val: objMatch[0], line, spaceBefore: currSpaceBefore});
+            tokens.push({val: objMatch[0], line, col: startCol, spaceBefore: currSpaceBefore});
             i += objMatch[0].length;
+            col += objMatch[0].length;
             continue;
         }
         if ("=+-*/<>!:[]".includes(char)) {
             if (char === '-' && (tokens.length === 0 || " \t\n\r(,;=+-*/<>!:[]".includes(code[i-1]))) {
-                i++;
+                i++; col++;
                 let word = "-";
                 while (i < code.length && !(" \t\n\r(),;\"'=+-*/<>!:[]".includes(code[i]))) {
                     word += code[i];
-                    i++;
+                    i++; col++;
                 }
                 if (word === "-") {
-                    tokens.push({val: "-", line, spaceBefore: currSpaceBefore});
+                    tokens.push({val: "-", line, col: startCol, spaceBefore: currSpaceBefore});
                 } else {
-                    tokens.push({val: word, line, spaceBefore: currSpaceBefore});
+                    tokens.push({val: word, line, col: startCol, spaceBefore: currSpaceBefore});
                 }
                 continue;
             }
-
             let op = char;
             if (i + 1 < code.length && "=+-*/<>!".includes(code[i+1])) {
                 op += code[i+1];
-                i += 2;
+                i += 2; col += 2;
             } else {
-                i++;
+                i++; col++;
             }
-            tokens.push({val: op, line, spaceBefore: currSpaceBefore});
+            tokens.push({val: op, line, col: startCol, spaceBefore: currSpaceBefore});
             continue;
         }
         let word = "";
         while (i < code.length && !(" \t\n\r(),;\"'=+-*/<>!:[]".includes(code[i]))) {
             word += code[i];
-            i++;
+            i++; col++;
         }
         if (word) {
-            tokens.push({val: word, line, spaceBefore: currSpaceBefore});
+            tokens.push({val: word, line, col: startCol, spaceBefore: currSpaceBefore});
         }
     }
     return tokens;
   }
-
   private processInfix(nodes: ASTNode[]): ASTNode[] {
       let res = [...nodes];
       const PRECEDENCE = [
@@ -436,7 +449,7 @@ class SkillInterpreter {
           if (t.val === '\'') {
               i++;
               let inner = parseExpr();
-              e = inner ? { type: 'quote', value: inner, line: t.line } : null;
+              e = inner ? { type: 'quote', value: inner, line: t.line, col: t.col } : null;
           } else if (t.val === '(') {
               i++;
               let list: ASTNode[] = [];
@@ -445,7 +458,7 @@ class SkillInterpreter {
                   if (innerE) list.push(innerE);
               }
               if (i < tokens.length) i++; // consume ')'
-              e = { type: 'list', elements: this.processInfix(list), line: t.line };
+              e = { type: 'list', elements: this.processInfix(list), line: t.line, col: t.col };
           } else {
               i++;
               if (i < tokens.length && tokens[i].val === '(' && !tokens[i].spaceBefore) {
@@ -456,24 +469,24 @@ class SkillInterpreter {
                      if (innerE) list.push(innerE);
                  }
                  if (i < tokens.length) i++; // consume ')'
-                 e = { type: 'call', fn: t.val, args: this.processInfix(list), line: t.line };
+                 e = { type: 'call', fn: t.val, args: this.processInfix(list), line: t.line, col: t.col };
               } else if (/^-?(0x[0-9a-fA-F]+|\d+(\.\d+)?)$/i.test(t.val)) {
                   let isHex = t.val.toLowerCase().includes('0x');
                   let isNeg = t.val.startsWith('-');
                   let numStr = isNeg ? t.val.substring(1) : t.val;
                   let val = isHex ? parseInt(numStr, 16) : parseFloat(numStr);
                   if (isNeg) val = -val;
-                  e = { type: 'number', value: val, line: t.line };
+                  e = { type: 'number', value: val, line: t.line, col: t.col };
               } else if (/^[a-zA-Z_][a-zA-Z0-9_]*:0x[0-9a-fA-F]+$/i.test(t.val)) {
-                  e = { type: 'string', value: t.val, line: t.line };
+                  e = { type: 'string', value: t.val, line: t.line, col: t.col };
               } else if (t.val.startsWith('"') && t.val.endsWith('"')) {
-                  e = { type: 'string', value: t.val.slice(1, -1), line: t.line };
+                  e = { type: 'string', value: t.val.slice(1, -1), line: t.line, col: t.col };
               } else if (t.val === 't') {
-                  e = { type: 'boolean', value: true, line: t.line };
+                  e = { type: 'boolean', value: true, line: t.line, col: t.col };
               } else if (t.val === 'nil') {
-                  e = { type: 'boolean', value: false, line: t.line };
+                  e = { type: 'boolean', value: false, line: t.line, col: t.col };
               } else {
-                  e = { type: 'symbol', name: t.val, line: t.line };
+                  e = { type: 'symbol', name: t.val, line: t.line, col: t.col };
               }
           }
 
@@ -481,7 +494,7 @@ class SkillInterpreter {
               i++;
               let indexExpr = parseExpr();
               if (i < tokens.length && tokens[i].val === ']') i++; // consume ]
-              e = { type: 'call', fn: 'array_access', args: [e, indexExpr], line: t.line };
+              e = { type: 'call', fn: 'array_access', args: [e, indexExpr], line: t.line, col: t.col };
           }
 
           return e;
@@ -515,6 +528,14 @@ class SkillInterpreter {
   }
 
   private async evaluateExpr(expr: ASTNode, env: Environment): Promise<any> {
+    try { return await this._evaluateExpr(expr, env); }
+    catch (err: any) {
+        if (err instanceof ReturnException) throw err;
+        if (err.name === 'SkillError') throw err;
+        throw new SkillError(err.message, expr.line, expr.col);
+    }
+}
+private async _evaluateExpr(expr: ASTNode, env: Environment): Promise<any> {
       if (!expr) return null;
       try {
           switch (expr.type) {

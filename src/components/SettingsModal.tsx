@@ -13,10 +13,12 @@ interface SettingsModalProps {
   setFontSize: (v: number) => void;
   apiKey: string;
   setApiKey: (v: string) => void;
+  aiProvider: string;
+  setAiProvider: (v: string) => void;
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
-  isOpen, onClose, wordWrap, setWordWrap, showMinimap, setShowMinimap, fontSize, setFontSize, apiKey, setApiKey
+  isOpen, onClose, wordWrap, setWordWrap, showMinimap, setShowMinimap, fontSize, setFontSize, apiKey, setApiKey, aiProvider, setAiProvider
 }) => {
   if (!isOpen) return null;
 
@@ -95,18 +97,26 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               <div className="flex items-center justify-between text-sm text-slate-300">
                 <div className="flex items-center gap-2">
                   <Sparkles size={16} className="text-indigo-400" />
-                  <span>Gemini API Key</span>
+                  <span>AI Provider</span>
                 </div>
+                <select 
+                  value={aiProvider}
+                  onChange={e => setAiProvider(e.target.value)}
+                  className="bg-[#0b0c10] border border-white/10 rounded px-2 py-1 text-xs text-slate-200 focus:outline-none focus:border-indigo-500/50"
+                >
+                  <option value="gemini">Google Gemini</option>
+                  <option value="openai">OpenAI ChatGPT</option>
+                </select>
               </div>
               <input 
                 type="password" 
-                placeholder="AIzaSy..." 
+                placeholder={aiProvider === 'openai' ? 'sk-proj-...' : 'AIzaSy...'}
                 value={apiKey}
                 onChange={e => setApiKey(e.target.value)}
                 className="w-full bg-[#0b0c10] border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-indigo-500/50"
               />
               <p className="text-[10px] text-slate-500 leading-relaxed">
-                Stored locally in your browser. Used exclusively for the "Ask Expert" analysis feature in the console.
+                Stored locally in your browser. Used exclusively for the "Ask Expert" analysis feature and console "ask" commands.
               </p>
             </div>
             

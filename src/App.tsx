@@ -3,7 +3,10 @@ import { motion, AnimatePresence } from "motion/react";
 import {
   FolderOpen,
   FileArchive,
+  FileDown,
   Copy,
+  Undo2,
+  Redo2,
   Sparkles,
   Book,
   LayoutTemplate,
@@ -126,15 +129,30 @@ function App() {
   
   const [documentationSearchQuery, setDocumentationSearchQuery] = useState("");
 
-  const handleNavigate = (fileName: string, line?: number) => {
+  const errorDecorsRef = useRef<string[]>([]);
+  const handleNavigate = (fileName: string, line?: number, col?: number) => {
     const file = files.find(f => f.name === fileName);
     if (file) {
       handleFileSelect(file.id);
       if (line !== undefined && editorRef.current) {
-        // Delay ensures editor has loaded the new model before scrolling
         setTimeout(() => {
           editorRef.current.revealLineInCenter(line);
-          editorRef.current.setPosition({ lineNumber: line, column: 1 });
+          editorRef.current.setPosition({ lineNumber: line, column: col || 1 });
+          
+          if (monacoRef.current) {
+            const decors = editorRef.current.deltaDecorations(errorDecorsRef.current, [
+              {
+                range: new monacoRef.current.Range(line, col || 1, line, (col || 1) + 1),
+                options: {
+                  className: 'error-highlight',
+                  isWholeLine: !col,
+                  linesDecorationsClassName: 'error-line-highlight'
+                }
+              }
+            ]);
+            errorDecorsRef.current = decors;
+          }
+          
           editorRef.current.focus();
         }, 100);
       }
@@ -218,8 +236,7 @@ function App() {
   };
   const [isConsoleOpen, setIsConsoleOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
-  const [consoleOutput, setConsoleOutput] = useState<ConsoleMessage[]>([]);
+    const [consoleOutput, setConsoleOutput] = useState<ConsoleMessage[]>([]);
   const [isTourOpen, setIsTourOpen] = useState(false);
 
   useEffect(() => {
@@ -478,8 +495,7 @@ function App() {
     if (!activeF) return;
     const blob = new Blob([activeF.content], { type: "text/plain" });
     saveAs(blob, activeF.name);
-    setIsExportMenuOpen(false);
-  };
+      };
 
   const handleDownloadProject = async () => {
     const zip = new JSZip();
@@ -488,8 +504,7 @@ function App() {
     });
     const content = await zip.generateAsync({ type: "blob" });
     saveAs(content, "skill_project.zip");
-    setIsExportMenuOpen(false);
-  };
+      };
 
   const handleCopy = () => {
     navigator.clipboard.writeText(content);
@@ -573,7 +588,9 @@ function App() {
           id: uuidv4(), 
           timestamp: getTimestamp(), 
           type: "error", 
-          text: result.output.join('\n') 
+          text: result.output.join('\n'),
+          line: result.line,
+          col: result.col
         }]);
       }
       setIsSimulating(false);
@@ -652,7 +669,60 @@ function App() {
         type: "info", 
         text: `Available functions in standard library: ${fnNames}` 
       }]);
-    } else if (cmd.startsWith('doc ')) {
+        } else if (cmd.startsWith('ask ')) {
+      const question = command.substring(4);
+      if (!apiKey) {
+        showToast("Please enter an API Key in Settings first.");
+        setIsSettingsOpen(true);
+        return;
+      }
+      setConsoleOutput(prev => [...prev, {
+        id: cmdId + '_analyzing',
+        timestamp: getTimestamp(),
+        type: 'info',
+        text: 'AI Expert is analyzing your request...'
+      }]);
+      
+      try {
+        const response = await fetch("/api/expert/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            question,
+            code: content,
+            apiKey,
+            provider: aiProvider
+          })
+        });
+        const data = await response.json();
+        setConsoleOutput(prev => prev.filter(m => m.id !== cmdId + '_analyzing'));
+        if (response.ok && data.reply) {
+          setConsoleOutput(prev => [...prev, {
+            id: uuidv4(),
+            timestamp: getTimestamp(),
+            type: "success",
+            text: data.reply
+          }]);
+          if (data.newCode) {
+            setContent(data.newCode);
+            if (editorRef.current) {
+              editorRef.current.setValue(data.newCode);
+            }
+            showToast("AI updated the code!");
+          }
+        } else {
+          throw new Error(data.error || "Unknown error occurred.");
+        }
+      } catch (err: any) {
+        setConsoleOutput(prev => prev.filter(m => m.id !== cmdId + '_analyzing'));
+        setConsoleOutput(prev => [...prev, {
+          id: uuidv4(),
+          timestamp: getTimestamp(),
+          type: "error",
+          text: "AI Error: " + err.message
+        }]);
+      }
+} else if (cmd.startsWith('doc ')) {
       const funcName = cmd.split(' ')[1];
       const fn = manualFns.find(f => f.name.toLowerCase() === funcName);
       if (fn) {
@@ -715,7 +785,8 @@ function App() {
           code: content,
           error: msg.text,
           context: msg.details || "",
-          apiKey
+          apiKey,
+          provider: aiProvider
         })
       });
 
@@ -916,40 +987,22 @@ function App() {
             <Settings size={16} className="text-slate-400" />
             <span className="hidden md:inline">Settings</span>
           </button>
-          <div className="relative">
-            <button 
-              onClick={() => setIsExportMenuOpen(!isExportMenuOpen)}
-              className="flex items-center gap-2 text-slate-300 hover:text-white hover:bg-white/5 px-2.5 py-1.5 rounded-lg text-sm font-medium transition-colors"
-            >
-              <FileArchive size={16} className="text-amber-400" />
-              <span className="hidden md:inline">Export</span>
-            </button>
-            
-            <AnimatePresence>
-              {isExportMenuOpen && (
-                <motion.div
-                  initial={{ opacity: 0, y: 8, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 8, scale: 0.95 }}
-                  transition={{ duration: 0.15 }}
-                  className="absolute right-0 top-full mt-2 w-48 bg-[#12141a] border border-white/10 rounded-xl shadow-xl overflow-hidden z-50 flex flex-col p-1"
-                >
-                  <button
-                    onClick={handleDownloadCurrent}
-                    className="flex flex-col text-left text-slate-300 hover:text-white hover:bg-white/5 px-3 py-2 rounded-lg text-sm font-medium transition-colors w-full"
-                  >
-                    <span>Current File (.il)</span>
-                  </button>
-                  <button
-                    onClick={handleDownloadProject}
-                    className="flex flex-col text-left text-slate-300 hover:text-white hover:bg-white/5 px-3 py-2 rounded-lg text-sm font-medium transition-colors w-full"
-                  >
-                    <span>Project ZIP (.zip)</span>
-                  </button>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
+          <button 
+            onClick={handleDownloadCurrent}
+            title="Export Current File"
+            className="flex items-center gap-2 text-slate-300 hover:text-white hover:bg-white/5 px-2.5 py-1.5 rounded-lg text-sm font-medium transition-colors"
+          >
+            <FileDown size={16} className="text-amber-400" />
+            <span className="hidden md:inline">Export File</span>
+          </button>
+          <button 
+            onClick={handleDownloadProject}
+            title="Export Entire Project as ZIP"
+            className="flex items-center gap-2 text-slate-300 hover:text-white hover:bg-white/5 px-2.5 py-1.5 rounded-lg text-sm font-medium transition-colors"
+          >
+            <FileArchive size={16} className="text-amber-400" />
+            <span className="hidden md:inline">Export Project</span>
+          </button>
           <button 
             onClick={handleCopy}
             className="flex items-center gap-2 text-slate-300 hover:text-white hover:bg-white/5 px-2.5 py-1.5 rounded-lg text-sm font-medium transition-colors"
@@ -1022,6 +1075,20 @@ function App() {
                 </button>
                 
                 <button 
+                  onClick={() => editorRef.current?.trigger('source', 'undo', null)} 
+                  title="Undo (Ctrl+Z)"
+                  className="flex items-center justify-center w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 text-[#94a3b8] hover:text-white transition-all"
+                >
+                  <Undo2 size={14} />
+                </button>
+                <button 
+                  onClick={() => editorRef.current?.trigger('source', 'redo', null)} 
+                  title="Redo (Ctrl+Y)"
+                  className="flex items-center justify-center w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 text-[#94a3b8] hover:text-white transition-all"
+                >
+                  <Redo2 size={14} />
+                </button>
+                <button 
                   onClick={() => {
                     navigator.clipboard.writeText(content);
                     showToast("Code copied to clipboard!");
@@ -1048,7 +1115,8 @@ function App() {
 
           {isConsoleOpen && (
             <div className="h-64 flex flex-col min-w-0 border-t border-white/[0.04]">
-              <Console messages={consoleOutput} onClear={() => setConsoleOutput([])} onClose={() => setIsConsoleOpen(false)} onApplyQuickFix={handleApplyQuickFix} onCommand={handleConsoleCommand} onExpertAnalyze={handleExpertAnalyze} onRefactor={handleRefactorCode} isSimulating={isSimulating} />
+              <Console messages={consoleOutput} onClear={() => setConsoleOutput([])} onClose={() => setIsConsoleOpen(false)} onApplyQuickFix={handleApplyQuickFix} onCommand={handleConsoleCommand} onExpertAnalyze={handleExpertAnalyze} onJumpToError={(line, col) => handleNavigate(activeFile.name, line, col)}
+                 isSimulating={isSimulating} />
             </div>
           )}
         </div>
@@ -1106,6 +1174,8 @@ function App() {
         setFontSize={setFontSize} 
         apiKey={apiKey}
         setApiKey={setApiKey}
+        aiProvider={aiProvider}
+        setAiProvider={setAiProvider}
       />
       <GitHubSyncModal
         isOpen={isGitHubModalOpen}

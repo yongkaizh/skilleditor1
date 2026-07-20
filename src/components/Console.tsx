@@ -26,6 +26,8 @@ export interface ConsoleMessage {
     label: string;
     action: () => void;
   };
+  line?: number;
+  col?: number;
   isExpertAnalyzing?: boolean;
 }
 
@@ -37,6 +39,7 @@ interface ConsoleProps {
   onApplyQuickFix?: (action: () => void) => void;
   onExpertAnalyze?: (msg: ConsoleMessage) => void;
   onRefactor?: () => void;
+  onJumpToError?: (line: number, col?: number) => void;
   isSimulating?: boolean;
 }
 
@@ -48,6 +51,7 @@ export const Console: React.FC<ConsoleProps> = ({
   onApplyQuickFix,
   onExpertAnalyze,
   onRefactor,
+  onJumpToError,
   isSimulating 
 }) => {
   const [filter, setFilter] = useState<ConsoleMessageType | 'all'>('all');
@@ -235,16 +239,7 @@ export const Console: React.FC<ConsoleProps> = ({
             <Trash2 size={14} />
           </button>
 
-          {onRefactor && (
-            <button 
-              onClick={onRefactor}
-              className="flex items-center gap-1.5 px-3 py-1 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 hover:text-indigo-300 border border-indigo-500/20 rounded-md text-[10px] font-bold transition-all"
-              title="Auto-refactor current code"
-            >
-              <Sparkles size={12} />
-              Refactor
-            </button>
-          )}
+          
 
           <button 
             onClick={onClose}
@@ -301,6 +296,16 @@ export const Console: React.FC<ConsoleProps> = ({
                           Ask Expert
                         </button>
                       )}
+                      
+                      {msg.line !== undefined && onJumpToError && (
+                        <button
+                          onClick={() => onJumpToError(msg.line, msg.col)}
+                          className="shrink-0 flex items-center gap-1.5 px-2 py-0.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 hover:text-blue-300 border border-blue-500/20 rounded text-[10px] font-bold transition-all"
+                        >
+                          Jump to Error {msg.line}{msg.col ? `:${msg.col}` : ''}
+                        </button>
+                      )}
+
                       {msg.quickFix && (
                         <button
                           onClick={() => handleApplyFix(msg.quickFix!.action)}
