@@ -166,7 +166,7 @@ export const Console: React.FC<ConsoleProps> = ({
   };
 
   return (
-    <section className="h-80 border-t border-white/5 bg-[#0b0c10] flex flex-col shrink-0 relative overflow-hidden shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.5)]">
+    <section className="h-full border-t border-white/5 bg-[#0b0c10] flex flex-col shrink-0 relative overflow-hidden shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.5)]">
       {/* Console Header */}
       <div className="px-4 py-2 bg-[#0d0e12] border-b border-white/[0.04] flex items-center justify-between shrink-0">
         <div className="flex items-center gap-6">

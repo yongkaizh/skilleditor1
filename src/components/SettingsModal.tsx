@@ -1,6 +1,7 @@
 import React from 'react';
 import { X, Settings, Type, Layout, WrapText, Database, Sparkles } from 'lucide-react';
 import { clear } from 'idb-keyval';
+import { motion } from 'motion/react';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -32,8 +33,18 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div 
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <motion.div 
+        initial={{ scale: 0.95, y: 15, opacity: 0 }}
+        animate={{ scale: 1, y: 0, opacity: 1 }}
+        exit={{ scale: 0.95, y: 15, opacity: 0 }}
+        transition={{ type: "spring", bounce: 0, duration: 0.3 }}
         className="bg-[#1e212b] border border-white/10 rounded-xl shadow-2xl w-full max-w-md overflow-hidden"
         onClick={e => e.stopPropagation()}
       >
@@ -148,7 +159,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             Done
           </button>
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 };
