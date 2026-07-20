@@ -47,7 +47,7 @@ import { ChallengeHub } from "./components/ChallengeHub";
 import { projectState } from "./editor/projectState";
 import { parseManual } from "./editor/manualParser";
 import { skillInterpreter } from "./editor/skillInterpreter";
-import { refactorSkillCode } from "./editor/refactorEngine";
+import { refactorSkillCode, type RefactorResult } from "./editor/refactorEngine";
 import { RefactorDiffView } from "./components/RefactorDiffView";
 import manualRawText from "./data/manual.txt?raw";
 
@@ -204,7 +204,7 @@ function App() {
   const [wordWrap, setWordWrap] = useState(true);
   const [fontSize, setFontSize] = useState(14);
   const [isSimulating, setIsSimulating] = useState(false);
-  const [proposedRefactor, setProposedRefactor] = useState<string | null>(null);
+  const [proposedRefactor, setProposedRefactor] = useState<RefactorResult | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -318,6 +318,26 @@ function App() {
         editorRef.current.focus();
       }
     }, 50);
+  };
+
+    const handleReplaceAll = (replacePairs: {fileId: string, content: string}[]) => {
+    let newFiles = [...files];
+    
+    replacePairs.forEach(pair => {
+      const idx = newFiles.findIndex(f => f.id === pair.fileId);
+      if (idx !== -1) {
+        newFiles[idx] = { ...newFiles[idx], content: pair.content };
+        if (activeFileId === pair.fileId) {
+          setContent(pair.content);
+          if (editorRef.current) {
+            editorRef.current.setValue(pair.content);
+          }
+        }
+      }
+    });
+    
+    setFiles(newFiles);
+    showToast(`Replaced in ${replacePairs.length} file(s)`);
   };
 
   const handleSearchResultClick = (fileId: string, line: number) => {
@@ -712,12 +732,12 @@ function App() {
 
   const handleRefactorCode = () => {
     if (!content) return;
-    const newContent = refactorSkillCode(content);
-    if (newContent === content) {
+    const result = refactorSkillCode(content);
+    if (result.code === content) {
       showToast("Code is already optimized");
       return;
     }
-    setProposedRefactor(newContent);
+    setProposedRefactor(result);
   };
 
   const handleAcceptRefactor = () => {
@@ -728,12 +748,12 @@ function App() {
       editorRef.current.executeEdits("refactor", [
         {
           range: editorRef.current.getModel()!.getFullModelRange(),
-          text: proposedRefactor,
+          text: proposedRefactor.code,
         },
       ]);
       editorRef.current.pushUndoStop();
     } else {
-      setContent(proposedRefactor);
+      setContent(proposedRefactor.code);
     }
     
     setConsoleOutput(prev => [...prev, { 
@@ -923,7 +943,7 @@ function App() {
                   </div>
                 )}
                 {activeTab === "search" && (
-                  <SearchSidebar files={files} onResultClick={handleSearchResultClick} onClose={() => setActiveTab(null)} />
+                  <SearchSidebar files={files} onResultClick={handleSearchResultClick} onReplaceAll={handleReplaceAll} onClose={() => setActiveTab(null)} />
                 )}
                 {activeTab === "outline" && (
                   <CodeOutlineSidebar content={content} onNavigate={(line) => handleNavigate(activeFile.name, line)} onClose={() => setActiveTab(null)} />
@@ -1013,7 +1033,8 @@ function App() {
         {proposedRefactor && (
           <RefactorDiffView 
             originalCode={content}
-            modifiedCode={proposedRefactor}
+            modifiedCode={proposedRefactor.code}
+            explanations={proposedRefactor.explanations}
             onAccept={handleAcceptRefactor}
             onCancel={() => setProposedRefactor(null)}
           />

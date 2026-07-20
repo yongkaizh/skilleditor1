@@ -6,6 +6,7 @@ import { X, Check, ArrowRight } from 'lucide-react';
 interface RefactorDiffViewProps {
   originalCode: string;
   modifiedCode: string;
+  explanations: string[];
   onAccept: () => void;
   onCancel: () => void;
 }
@@ -13,6 +14,7 @@ interface RefactorDiffViewProps {
 export const RefactorDiffView: React.FC<RefactorDiffViewProps> = ({ 
   originalCode, 
   modifiedCode, 
+  explanations,
   onAccept, 
   onCancel 
 }) => {
@@ -78,20 +80,34 @@ export const RefactorDiffView: React.FC<RefactorDiffViewProps> = ({
 
       <div className="flex-1 min-h-0" ref={containerRef} />
 
-      <div className="p-4 border-t border-white/5 bg-[#0a0b0f] flex items-center justify-end gap-3">
-        <button 
-          onClick={onCancel}
-          className="px-4 py-2 text-sm font-bold text-slate-400 hover:text-white transition-colors"
-        >
-          Discard
-        </button>
-        <button 
-          onClick={onAccept}
-          className="px-6 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm font-bold shadow-lg shadow-indigo-600/20 flex items-center gap-2 transition-all"
-        >
-          <Check size={18} />
-          Apply Improvements
-        </button>
+      <div className="p-4 border-t border-white/5 bg-[#0a0b0f] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        {explanations && explanations.length > 0 ? (
+          <div className="flex-1 min-w-0">
+            <h3 className="text-xs font-bold text-indigo-400 mb-1">Applied Improvements:</h3>
+            <ul className="text-xs text-slate-400 list-disc list-inside max-h-16 overflow-y-auto pr-2 custom-scrollbar">
+              {explanations.map((exp, i) => (
+                <li key={i} className="truncate" title={exp}>{exp}</li>
+              ))}
+            </ul>
+          </div>
+        ) : (
+          <div className="flex-1"></div>
+        )}
+        <div className="flex items-center justify-end gap-3 shrink-0">
+          <button 
+            onClick={onCancel}
+            className="px-4 py-2 text-sm font-bold text-slate-400 hover:text-white transition-colors"
+          >
+            Discard
+          </button>
+          <button 
+            onClick={onAccept}
+            className="px-6 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm font-bold shadow-lg shadow-indigo-600/20 flex items-center gap-2 transition-all"
+          >
+            <Check size={18} />
+            Apply Improvements
+          </button>
+        </div>
       </div>
     </motion.div>
   );

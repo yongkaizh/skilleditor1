@@ -4598,3 +4598,128 @@ if(port then
 @usage geqp(n_1 n_2)
 @category Math
 @desc Returns t if n_1 >= n_2.
+
+@function +
+@usage +(n_1 n_2 ...)
+@category Math
+@desc Adds numbers together.
+
+@function -
+@usage -(n_1 [n_2 ...])
+@category Math
+@desc Subtracts numbers or negates a number.
+
+@function *
+@usage *(n_1 n_2 ...)
+@category Math
+@desc Multiplies numbers together.
+
+@function /
+@usage /(n_1 n_2 ...)
+@category Math
+@desc Divides numbers.
+
+@function remainder
+@usage remainder(n_1 n_2)
+@category Math
+@desc Returns the remainder of integer division.
+
+@function mod
+@usage mod(n_1 n_2)
+@category Math
+@desc Returns modulo.
+
+@function add1
+@usage add1(n_num)
+@category Math
+@desc Adds 1 to the number.
+
+@function zerop
+@usage zerop(n_num)
+@category Math
+@desc Returns t if the number is zero.
+
+@function onep
+@usage onep(n_num)
+@category Math
+@desc Returns t if the number is one.
+
+@function minusp
+@usage minusp(n_num)
+@category Math
+@desc Returns t if the number is negative.
+
+@function plusp
+@usage plusp(n_num)
+@category Math
+@desc Returns t if the number is positive.
+
+@function evenp
+@usage evenp(x_num)
+@category Math
+@desc Returns t if the integer is even.
+
+@function oddp
+@usage oddp(x_num)
+@category Math
+@desc Returns t if the integer is odd.
+
+@function symbolp
+@usage symbolp(g_arg)
+@category Type Checking
+@desc Returns t if the argument is a symbol.
+
+@function stringp
+@usage stringp(g_arg)
+@category Type Checking
+@desc Returns t if the argument is a string.
+
+@function integerp
+@usage integerp(g_arg)
+@category Type Checking
+@desc Returns t if the argument is an integer.
+
+@function floatp
+@usage floatp(g_arg)
+@category Type Checking
+@desc Returns t if the argument is a floating-point number.
+
+@function numberp
+@usage numberp(g_arg)
+@category Type Checking
+@desc Returns t if the argument is a number (integer or float).
+
+@function forall
+@usage forall(s_var l_list g_cond)
+@category List
+@desc Returns t if all elements satisfy the condition.
+
+@function assq
+@usage assq(g_key l_alist)
+@category List
+@desc Returns the association list entry whose car is eq to the key.
+
+@function index
+@usage index(t_str t_pattern)
+@category String
+@desc Returns the substring starting at the first occurrence of the pattern.
+
+@function print
+@usage print(g_arg [p_port])
+@category File I/O
+@desc Prints the argument and returns it.
+
+@function println
+@usage println(g_arg [p_port])
+@category File I/O
+@desc Prints the argument followed by a newline.
+
+@function rexSubstitute
+@usage rexSubstitute(t_replacement)
+@category String
+@desc Substitutes matched groups.
+
+@function rexMagic
+@usage rexMagic(b_magic)
+@category String
+@desc Enables or disables regular expression magic characters.

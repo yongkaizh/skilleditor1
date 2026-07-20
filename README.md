@@ -13,6 +13,35 @@ A modern, web-based IDE designed specifically for writing Cadence SKILL and SKIL
   - **Interactive Onboarding**: Step-by-step guidance for new users.
 - **Premium UI/UX**: Built with a sleek dark mode, glassmorphism effects, and dynamic micro-animations to make scripting enjoyable.
 
+## 📁 App Structure
+
+This application is modularly structured to ensure maintainability and separation of concerns:
+
+- `src/components/`: Contains all React UI components.
+  - `EditorPane.tsx`: The primary wrapper around the Monaco Editor instance.
+  - `Console.tsx`: The bottom console panel for running commands and interacting with the interpreter.
+  - `RefactorDiffView.tsx`: Displays proposed automated refactorings.
+  - `SearchSidebar.tsx`, `CodeOutlineSidebar.tsx`, `FileExplorer.tsx`: Sidebar utilities.
+- `src/editor/`: Core editor and language intelligence logic.
+  - `monaco-config.ts`: Configures the SKILL language tokenizer, autocomplete provider, and hover documentation.
+  - `manualParser.ts`: Parses the text-based documentation (`manual.txt`) into structured intelligence for Monaco.
+  - `skillInterpreter.ts`: An experimental client-side AST parser and interpreter for executing SKILL syntax.
+  - `refactorEngine.ts`: Contains logic for analyzing code and suggesting design pattern improvements.
+- `src/data/`: Static data sources.
+  - `manual.txt`: The primary dictionary for SKILL functions (used for hover/autocomplete).
+- `src/App.tsx`: The main application orchestrator, managing state across the editor, file explorer, and sidebars.
+
+## 🪄 Auto Refactor Code
+
+The **Auto Refactor** tool analyzes your SKILL code and proposes common design pattern improvements to make the code cleaner, safer, and more aligned with Cadence best practices. 
+
+When you apply a refactor, it parses the active script and checks against a set of heuristic rules. For example:
+- **`let` block structuring:** Ensures local variables in `let` blocks are correctly enclosed in a list `let((var1 var2) ...)`.
+- **Database (`db`) prefixing:** Automatically adds standard Cadence `db` prefixes to recognized core geometry functions if you forgot them (e.g., expanding `CreateRect` to `dbCreateRect`).
+- **Loop Optimization:** Can suggest utilizing optimal iteration techniques like `mapcar` instead of `foreach` loops with `cons` accumulation.
+
+If improvements are found, a **Review Refactor Changes** pane will appear displaying a "Before & After" diff, allowing you to review the changes before applying them to your document.
+
 ## 🚀 Getting Started
 
 ### Prerequisites
