@@ -516,14 +516,23 @@ export function configureMonaco(monaco: Monaco, manualFunctions: SkillFunction[]
       }));
 
       // 4. Standard Cadence API (from manual.txt)
-      const dynamicSuggestions = globalManualFunctions.map((fn: any) => {
-        const argsMatch = fn.usage.match(/\((.*?)\)/);
+            // Get names of snippets we already have to avoid duplicates
+      const snippetNames = new Set(snippetSuggestions.map(s => s.label));
+
+      const dynamicSuggestions = globalManualFunctions
+        .filter((fn: any) => !snippetNames.has(fn.name))
+        .map((fn: any) => {
+        const firstParen = fn.usage.indexOf('(');
+        const lastParen = fn.usage.lastIndexOf(')');
         let insertSnippet = fn.name + '()';
-        if (argsMatch && argsMatch[1].trim() !== '') {
-          // Create placeholder arguments: dbOpenCellViewByType(${1:cvId})
-          let cleanedArgs = argsMatch[1].trim().replace(/\[/g, '').replace(/\]/g, '').replace(/\.\.\./g, 'rest');
-          const args = cleanedArgs.split(/\s+/).filter((a: string) => a !== '').map((arg: string, i: number) => `\${${i+1}:${arg}}`).join(' ');
-          insertSnippet = `${fn.name}(${args})`;
+        
+        if (firstParen !== -1 && lastParen > firstParen) {
+          const argsStr = fn.usage.substring(firstParen + 1, lastParen).trim();
+          if (argsStr !== '') {
+            let cleanedArgs = argsStr.replace(/\[/g, '').replace(/\]/g, '').replace(/\.\.\./g, 'rest');
+            const args = cleanedArgs.split(/\s+/).filter((a: string) => a !== '').map((arg: string, i: number) => "${" + (i+1) + ":" + arg + "}").join(' ');
+            insertSnippet = fn.name + '(' + args + ')';
+          }
         }
 
         return {
@@ -541,7 +550,7 @@ export function configureMonaco(monaco: Monaco, manualFunctions: SkillFunction[]
               ...(fn.example ? ['', '**Example:**', '```cadence-skill', fn.example, '```'] : [])
             ].join('\n')
           },
-          detail: `Cadence API (${fn.category})`,
+          detail: 'Cadence API (' + fn.category + ')',
           sortText: 'd_' + fn.name,
           range
         };
