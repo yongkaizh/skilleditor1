@@ -512,6 +512,31 @@ class SkillInterpreter {
         spaceBefore = false;
         
         let startCol = col;
+        if ((char === '~' && i + 1 < code.length && code[i+1] === '>') ||
+            (char === '-' && i + 1 < code.length && code[i+1] === '>')) {
+            let word = "";
+            while (i < code.length) {
+                let nextChar = code[i];
+                if (nextChar === '~' && i + 1 < code.length && code[i+1] === '>') {
+                    word += "~>";
+                    i += 2; col += 2;
+                    continue;
+                }
+                if (nextChar === '-' && i + 1 < code.length && code[i+1] === '>') {
+                    word += "->";
+                    i += 2; col += 2;
+                    continue;
+                }
+                if (" \t\n\r(),;\"'=+-*/<>!:[]".includes(nextChar)) {
+                    break;
+                }
+                word += nextChar;
+                i++; col++;
+            }
+            tokens.push({val: word, line, col: startCol, spaceBefore: currSpaceBefore});
+            continue;
+        }
+
         if (char === '"') {
             let str = '"';
             i++; col++;
@@ -562,8 +587,22 @@ class SkillInterpreter {
             continue;
         }
         let word = "";
-        while (i < code.length && !(" \t\n\r(),;\"'=+-*/<>!:[]".includes(code[i]))) {
-            word += code[i];
+        while (i < code.length) {
+            let nextChar = code[i];
+            if (nextChar === '~' && i + 1 < code.length && code[i+1] === '>') {
+                word += "~>";
+                i += 2; col += 2;
+                continue;
+            }
+            if (nextChar === '-' && i + 1 < code.length && code[i+1] === '>') {
+                word += "->";
+                i += 2; col += 2;
+                continue;
+            }
+            if (" \t\n\r(),;\"'=+-*/<>!:[]".includes(nextChar)) {
+                break;
+            }
+            word += nextChar;
             i++; col++;
         }
         if (word) {
@@ -581,6 +620,17 @@ class SkillInterpreter {
           ['&&', '||'],
           ['=']
       ];
+
+      // Unary postfix ++ or --
+      for (let i = 0; i < res.length; i++) {
+          if (res[i].type === 'symbol' && (res[i].name === '++' || res[i].name === '--')) {
+              if (i > 0) {
+                  let call = { type: 'call', fn: res[i].name, args: [res[i-1]], line: res[i].line };
+                  res.splice(i - 1, 2, call);
+                  i--;
+              }
+          }
+      }
 
       // Unary minus
       for (let i = 0; i < res.length; i++) {
@@ -759,6 +809,9 @@ private async _evaluateExpr(expr: ASTNode, env: Environment): Promise<any> {
                   if (obj === undefined) {
                       throw new Error(`*Error* eval: unbound variable - ${parts[0]} at line ${expr.line}`);
                   }
+                  if (obj === null || typeof obj !== 'object') {
+                      throw new Error(`*Error* eval: invalid database ID/datatype - ${obj} (expected database object like db:0x12739)`);
+                  }
                   for (let i = 1; i < parts.length; i++) {
                       const prop = parts[i];
                       if (obj && typeof obj === 'object') {
@@ -915,6 +968,9 @@ private async _evaluateExpr(expr: ASTNode, env: Environment): Promise<any> {
                   let obj = env.get(parts[0]);
                   if (obj === undefined) {
                       throw new Error(`*Error* eval: unbound variable - ${parts[0]} at line ${sym.line}`);
+                  }
+                  if (obj === null || typeof obj !== 'object') {
+                      throw new Error(`*Error* eval: invalid database ID/datatype - ${obj} (expected database object like db:0x12739)`);
                   }
                   for (let i = 1; i < parts.length - 1; i++) {
                       const prop = parts[i];
@@ -1133,6 +1189,25 @@ private async _evaluateExpr(expr: ASTNode, env: Environment): Promise<any> {
               }
           }
           return lastVal;
+      }
+
+      if (fnName === '++') {
+          let sym = args[0];
+          if (sym.type !== 'symbol') throw new Error("*Error* ++: argument must be a symbol");
+          let val = env.get(sym.name);
+          if (val === undefined || val === null) val = 0;
+          if (typeof val !== 'number') throw new Error("*Error* ++: value must be a number");
+          env.set(sym.name, val + 1);
+          return val + 1;
+      }
+      if (fnName === '--') {
+          let sym = args[0];
+          if (sym.type !== 'symbol') throw new Error("*Error* --: argument must be a symbol");
+          let val = env.get(sym.name);
+          if (val === undefined || val === null) val = 0;
+          if (typeof val !== 'number') throw new Error("*Error* --: value must be a number");
+          env.set(sym.name, val - 1);
+          return val - 1;
       }
 
       let fn = env.get(fnName);
