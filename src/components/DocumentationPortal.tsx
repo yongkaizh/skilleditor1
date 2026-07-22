@@ -15,7 +15,6 @@ import {
   List,
   Grid,
   ChevronDown,
-  Filter,
   SlidersHorizontal
 } from 'lucide-react';
 
@@ -50,6 +49,22 @@ const getCategoryBadgeClass = (category: string) => {
       return 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20';
     case 'Environment & OS':
       return 'bg-orange-500/10 text-orange-400 border-orange-500/20';
+    case 'Relative Object Design':
+      return 'bg-fuchsia-500/10 text-fuchsia-400 border-fuchsia-500/20';
+    case 'Technology File':
+      return 'bg-violet-500/10 text-violet-400 border-violet-500/20';
+    case 'String & RegEx':
+      return 'bg-lime-500/10 text-lime-400 border-lime-500/20';
+    case 'List Operations':
+      return 'bg-sky-500/10 text-sky-400 border-sky-500/20';
+    case 'Math & Numbers':
+      return 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20';
+    case 'Type Checking':
+      return 'bg-pink-500/10 text-pink-400 border-pink-500/20';
+    case 'File I/O':
+      return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
+    case 'Core Language':
+      return 'bg-slate-500/10 text-slate-300 border-slate-500/20';
     default:
       return 'bg-slate-500/10 text-slate-400 border-slate-500/20';
   }
@@ -92,7 +107,8 @@ export const DocumentationPortal: React.FC<DocumentationPortalProps> = ({
   const [activePrefix, setActivePrefix] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'flat' | 'grouped'>('flat');
   const [copiedText, setCopiedText] = useState<string | null>(null);
-  const [showCategoryGrid, setShowCategoryGrid] = useState<boolean>(false);
+  const [isCategoryAccordionOpen, setIsCategoryAccordionOpen] = useState<boolean>(false);
+  const [categorySearchQuery, setCategorySearchQuery] = useState<string>("");
 
   // Compute category counts
   const categoryCounts = useMemo(() => {
@@ -105,7 +121,9 @@ export const DocumentationPortal: React.FC<DocumentationPortalProps> = ({
   }, [manualFns]);
 
   const categories = useMemo(() => {
-    const cats = Object.keys(categoryCounts).filter(c => c !== "All").sort();
+    const cats = Object.keys(categoryCounts).filter(c => c !== "All").sort((a, b) => {
+      return (categoryCounts[b] || 0) - (categoryCounts[a] || 0);
+    });
     return ["All", ...cats];
   }, [categoryCounts]);
 
@@ -331,65 +349,132 @@ export const DocumentationPortal: React.FC<DocumentationPortalProps> = ({
                   )}
                 </div>
 
-                {/* Category Dropdown & Grid Toggle Bar */}
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <div className="relative flex-1">
-                      <SlidersHorizontal size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                      <select
-                        value={selectedCategory}
-                        onChange={(e) => setSelectedCategory(e.target.value)}
-                        className="w-full bg-[#181c26] border border-white/10 rounded-xl pl-9 pr-8 py-1.5 text-xs text-white appearance-none focus:outline-none focus:border-indigo-500/60 cursor-pointer font-medium"
-                      >
-                        {categories.map((cat) => (
-                          <option key={cat} value={cat} className="bg-[#12141a] text-slate-200">
-                            {cat} ({categoryCounts[cat] || 0})
-                          </option>
-                        ))}
-                      </select>
-                      <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                {/* Category Navigation Section with Accordion and Vertical Scroll List */}
+                <div className="space-y-2 relative">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                      <SlidersHorizontal size={11} className="text-indigo-400" />
+                      <span>Categories ({categories.length - 1})</span>
                     </div>
 
                     <button
-                      onClick={() => setShowCategoryGrid(!showCategoryGrid)}
-                      className={`px-2.5 py-1.5 rounded-xl border text-xs font-semibold flex items-center gap-1.5 shrink-0 transition-all cursor-pointer ${
-                        showCategoryGrid 
-                          ? 'bg-indigo-600 text-white border-indigo-500 shadow-sm' 
-                          : 'bg-white/[0.04] border-white/10 text-slate-300 hover:bg-white/10'
+                      onClick={() => setIsCategoryAccordionOpen(!isCategoryAccordionOpen)}
+                      className={`px-2.5 py-1 rounded-lg border text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all cursor-pointer ${
+                        isCategoryAccordionOpen
+                          ? 'bg-indigo-600 text-white border-indigo-400 shadow-sm'
+                          : 'bg-white/[0.04] border-white/10 text-slate-300 hover:bg-white/10 hover:text-white'
                       }`}
-                      title={showCategoryGrid ? "Collapse categories to single line" : "Show all category badges as grid"}
                     >
-                      <Filter size={12} />
-                      <span className="text-[10px] uppercase tracking-wider">{showCategoryGrid ? 'Hide Grid' : 'All Categories'}</span>
+                      <span>{isCategoryAccordionOpen ? 'Close Accordion' : 'Show All Categories'}</span>
+                      <ChevronDown size={13} className={`transition-transform duration-200 ${isCategoryAccordionOpen ? 'rotate-180' : ''}`} />
                     </button>
                   </div>
 
-                  {/* Category Pills (Grid or Horizontal Row) */}
-                  <div className={`transition-all ${
-                    showCategoryGrid 
-                      ? 'flex flex-wrap gap-1.5 p-2 bg-black/20 border border-white/5 rounded-xl max-h-48 overflow-y-auto custom-scrollbar' 
-                      : 'flex overflow-x-auto gap-1.5 pb-1 custom-scrollbar'
-                  }`}>
-                    {categories.map((cat) => {
-                      const count = categoryCounts[cat] || 0;
-                      const isSelected = selectedCategory === cat;
-                      return (
-                        <button
-                          key={cat}
-                          onClick={() => setSelectedCategory(cat)}
-                          className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all whitespace-nowrap border flex items-center gap-1.5 cursor-pointer ${
-                            isSelected
-                              ? "bg-indigo-500/20 border-indigo-500/50 text-indigo-300 shadow-sm ring-1 ring-indigo-500/30"
-                              : "bg-white/[0.02] border-white/[0.06] text-slate-400 hover:text-slate-200 hover:bg-white/[0.06]"
-                          }`}
-                        >
-                          <span>{cat}</span>
-                          <span className={`px-1.5 py-0.2 text-[9px] rounded-full font-mono ${isSelected ? 'bg-indigo-500/30 text-indigo-200' : 'bg-white/5 text-slate-500'}`}>
-                            {count}
-                          </span>
-                        </button>
-                      );
-                    })}
+                  {/* Accordion Expanded Panel: Vertical Scroll List & Category Search */}
+                  <AnimatePresence>
+                    {isCategoryAccordionOpen && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0, y: -10 }}
+                        animate={{ opacity: 1, height: 'auto', y: 0 }}
+                        exit={{ opacity: 0, height: 0, y: -10 }}
+                        transition={{ duration: 0.2 }}
+                        className="absolute top-full left-0 right-0 mt-2 z-50 overflow-hidden bg-[#0d0f14] border border-white/20 rounded-xl p-2.5 space-y-2 shadow-2xl backdrop-blur-xl"
+                      >
+                        {/* Category Filter Search Input inside Accordion */}
+                        <div className="relative">
+                          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500" size={12} />
+                          <input
+                            type="text"
+                            placeholder="Filter categories..."
+                            value={categorySearchQuery}
+                            onChange={(e) => setCategorySearchQuery(e.target.value)}
+                            className="w-full bg-white/[0.04] border border-white/10 rounded-lg pl-8 pr-7 py-1 text-[11px] text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500/50 font-medium"
+                          />
+                          {categorySearchQuery && (
+                            <button
+                              onClick={() => setCategorySearchQuery('')}
+                              className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white"
+                            >
+                              <X size={11} />
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Vertical Scroll List of All Categories */}
+                        <div className="max-h-52 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
+                          {categories
+                            .filter(cat => !categorySearchQuery || cat.toLowerCase().includes(categorySearchQuery.toLowerCase()))
+                            .map((cat) => {
+                              const count = categoryCounts[cat] || 0;
+                              const isSelected = selectedCategory === cat;
+                              return (
+                                <button
+                                  key={cat}
+                                  onClick={() => {
+                                    setSelectedCategory(cat);
+                                  }}
+                                  className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center justify-between group border cursor-pointer ${
+                                    isSelected
+                                      ? "bg-indigo-500/20 border-indigo-500/40 text-white shadow-sm ring-1 ring-indigo-500/30"
+                                      : "bg-white/[0.02] border-white/[0.04] text-slate-300 hover:bg-white/[0.06] hover:text-white"
+                                  }`}
+                                >
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <span className={`w-2 h-2 rounded-full shrink-0 ${isSelected ? 'bg-indigo-400' : 'bg-slate-600 group-hover:bg-indigo-400'}`} />
+                                    <span className="truncate font-mono text-[11px]">{cat}</span>
+                                  </div>
+                                  <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                                    <span className={`px-1.5 py-0.2 text-[9px] font-bold rounded-full border ${getCategoryBadgeClass(cat)}`}>
+                                      {count} functions
+                                    </span>
+                                    {isSelected && <Check size={12} className="text-indigo-400" />}
+                                  </div>
+                                </button>
+                              );
+                            })}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  {/* Quick Category Chips Bar (Horizontal Wrap) */}
+                  <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                    {(() => {
+                      const topCategories = categories.slice(0, 5);
+                      if (selectedCategory !== "All" && !topCategories.includes(selectedCategory)) {
+                        topCategories.push(selectedCategory);
+                      }
+                      return topCategories.map((cat) => {
+                        const count = categoryCounts[cat] || 0;
+                        const isSelected = selectedCategory === cat;
+                        return (
+                          <button
+                            key={cat}
+                            onClick={() => setSelectedCategory(cat)}
+                            className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all whitespace-nowrap border flex items-center gap-1.5 cursor-pointer ${
+                              isSelected
+                                ? "bg-indigo-500/20 border-indigo-500/50 text-indigo-300 shadow-sm ring-1 ring-indigo-500/30"
+                                : "bg-white/[0.02] border-white/[0.06] text-slate-400 hover:text-slate-200 hover:bg-white/[0.06]"
+                            }`}
+                          >
+                            <span>{cat}</span>
+                            <span className={`px-1.5 py-0.2 text-[9px] rounded-full font-mono ${isSelected ? 'bg-indigo-500/30 text-indigo-200' : 'bg-white/5 text-slate-500'}`}>
+                              {count}
+                            </span>
+                          </button>
+                        );
+                      });
+                    })()}
+
+                    {!isCategoryAccordionOpen && (
+                      <button
+                        onClick={() => setIsCategoryAccordionOpen(true)}
+                        className="px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 hover:bg-indigo-500/20 hover:text-indigo-300 transition-all flex items-center gap-1 cursor-pointer"
+                      >
+                        <span>+{categories.length - 5} More</span>
+                        <ChevronDown size={11} />
+                      </button>
+                    )}
                   </div>
                 </div>
 

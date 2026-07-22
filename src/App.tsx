@@ -1149,15 +1149,15 @@ function App() {
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-[#0b0c10] text-[#e2e8f0] font-sans">
       <header className="h-14 md:h-16 shrink-0 bg-[#0a0b0f] border-b border-white/[0.04] flex items-center justify-between px-3 md:px-6 z-40 relative">
-        <div className="flex items-center gap-4 md:gap-8 shrink-0">
-          <div className="font-semibold text-base tracking-tight flex items-center gap-2 md:gap-3 text-white">
+        <div className="flex items-center gap-2 md:gap-4 shrink overflow-hidden">
+          <div className="font-semibold text-base tracking-tight flex items-center gap-2 md:gap-3 text-white shrink-0">
             <div className="bg-indigo-500/10 p-1.5 rounded-lg border border-indigo-500/20">
               <Sparkles className="text-indigo-400" size={18} />
             </div>
             <span className="hidden md:inline">Cadence SKILL IDE</span><span className="md:hidden">SKILL</span>
           </div>
           
-          <div className="flex items-center gap-1 md:gap-2">
+          <div className="flex items-center gap-1 md:gap-2 overflow-x-auto no-scrollbar shrink">
             <Tooltip content="Browse project files" position="bottom" delay={0.5} disabled={activeTab === "files"}>
               <button
                 className={`relative inline-flex items-center gap-2 px-2.5 py-2 rounded-lg text-sm font-medium cursor-pointer transition-all ${activeTab === "files" ? 'bg-indigo-500/10 text-indigo-400' : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'}`}
@@ -1253,11 +1253,11 @@ function App() {
           </div>
         </div>
         
-        <div className="flex gap-1 md:gap-2 items-center overflow-x-auto no-scrollbar mask-linear-fade">
+        <div className="flex gap-1 md:gap-2 items-center shrink-0">
           <Tooltip content={autoSaveEnabled ? "Auto-save active" : "Auto-save disabled"} position="bottom">
             <button 
               onClick={() => setAutoSaveEnabled(!autoSaveEnabled)}
-              className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-sm font-medium transition-colors ${autoSaveEnabled ? 'text-indigo-400 hover:bg-indigo-400/10' : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'}`}
+              className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-sm font-medium transition-colors shrink-0 ${autoSaveEnabled ? 'text-indigo-400 hover:bg-indigo-400/10' : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'}`}
             >
               {autoSaveEnabled ? <Save size={16} /> : <SaveOff size={16} />}
               <div className="w-16 hidden md:flex items-center justify-start text-[11px]">
