@@ -1128,15 +1128,15 @@ function App() {
             <span className="hidden md:inline">Cadence SKILL IDE</span><span className="md:hidden">SKILL</span>
           </div>
           
-          <div className="flex items-center gap-1 md:gap-2 overflow-x-auto no-scrollbar shrink min-w-0">
+          <div className="flex items-center gap-1 md:gap-2 overflow-x-auto custom-scrollbar pb-1.5 pt-1.5 shrink min-w-0">
             <Tooltip content="Browse project files" position="bottom" delay={0.5} disabled={activeTab === "files"}>
               <button
                 className={`relative inline-flex items-center gap-2 px-2.5 py-2 rounded-lg text-sm font-medium cursor-pointer transition-all shrink-0 ${activeTab === "files" ? 'bg-indigo-500/10 text-indigo-400' : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'}`}
                 onClick={() => setActiveTab(activeTab === "files" ? null : "files")}
               >
-                <FolderOpen size={16} /> <span className="hidden lg:inline">Explorer</span>
+                <FolderOpen size={16} /> <span className="hidden md:inline">Explorer</span>
                 {activeTab === "files" && (
-                  <motion.div layoutId="activeTabWedge" className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 w-6 h-[3px] bg-indigo-500 rounded-t-full" />
+                  <motion.div layoutId="activeTabWedge" className="absolute bottom-0 left-1/2 -translate-x-1/2 w-6 h-[3px] bg-indigo-500 rounded-t-full" />
                 )}
               </button>
             </Tooltip>
@@ -1146,9 +1146,9 @@ function App() {
                 className={`relative inline-flex items-center gap-2 px-2.5 py-2 rounded-lg text-sm font-medium cursor-pointer transition-all shrink-0 ${activeTab === "search" ? 'bg-indigo-500/10 text-indigo-400' : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'}`}
                 onClick={() => setActiveTab(activeTab === "search" ? null : "search")}
               >
-                <Search size={16} /> <span className="hidden lg:inline">Search</span>
+                <Search size={16} /> <span className="hidden md:inline">Search</span>
                 {activeTab === "search" && (
-                  <motion.div layoutId="activeTabWedge" className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 w-6 h-[3px] bg-indigo-500 rounded-t-full" />
+                  <motion.div layoutId="activeTabWedge" className="absolute bottom-0 left-1/2 -translate-x-1/2 w-6 h-[3px] bg-indigo-500 rounded-t-full" />
                 )}
               </button>
             </Tooltip>
@@ -1157,9 +1157,9 @@ function App() {
                 className={`relative inline-flex items-center gap-2 px-2.5 py-2 rounded-lg text-sm font-medium cursor-pointer transition-all shrink-0 ${activeTab === "outline" ? 'bg-indigo-500/10 text-indigo-400' : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'}`}
                 onClick={() => setActiveTab(activeTab === "outline" ? null : "outline")}
               >
-                <ListTree size={16} /> <span className="hidden lg:inline">Outline</span>
+                <ListTree size={16} /> <span className="hidden md:inline">Outline</span>
                 {activeTab === "outline" && (
-                  <motion.div layoutId="activeTabWedge" className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 w-6 h-[3px] bg-indigo-500 rounded-t-full" />
+                  <motion.div layoutId="activeTabWedge" className="absolute bottom-0 left-1/2 -translate-x-1/2 w-6 h-[3px] bg-indigo-500 rounded-t-full" />
                 )}
               </button>
             </Tooltip>
@@ -1168,9 +1168,9 @@ function App() {
                 className={`relative inline-flex items-center gap-2 px-2.5 py-2 rounded-lg text-sm font-medium cursor-pointer transition-all shrink-0 ${activeTab === "tour" ? 'bg-indigo-500/10 text-indigo-400' : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'}`}
                 onClick={() => setActiveTab(activeTab === "tour" ? null : "tour")}
               >
-                <GraduationCap size={16} /> <span className="hidden lg:inline">Lessons</span>
+                <GraduationCap size={16} /> <span className="hidden md:inline">Lessons</span>
                 {activeTab === "tour" && (
-                  <motion.div layoutId="activeTabWedge" className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 w-6 h-[3px] bg-indigo-500 rounded-t-full" />
+                  <motion.div layoutId="activeTabWedge" className="absolute bottom-0 left-1/2 -translate-x-1/2 w-6 h-[3px] bg-indigo-500 rounded-t-full" />
                 )}
               </button>
             </Tooltip>
@@ -1179,9 +1179,9 @@ function App() {
                 className={`relative inline-flex items-center gap-2 px-2.5 py-2 rounded-lg text-sm font-medium cursor-pointer transition-all shrink-0 ${activeTab === "challenges" ? 'bg-rose-500/10 text-rose-400' : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'}`}
                 onClick={() => setActiveTab(activeTab === "challenges" ? null : "challenges")}
               >
-                <Trophy size={16} /> <span className="hidden lg:inline">Challenges</span>
+                <Trophy size={16} /> <span className="hidden md:inline">Challenges</span>
                 {activeTab === "challenges" && (
-                  <motion.div layoutId="activeTabWedge" className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 w-6 h-[3px] bg-rose-500 rounded-t-full" />
+                  <motion.div layoutId="activeTabWedge" className="absolute bottom-0 left-1/2 -translate-x-1/2 w-6 h-[3px] bg-rose-500 rounded-t-full" />
                 )}
               </button>
             </Tooltip>
@@ -1193,9 +1193,9 @@ function App() {
                 className={`relative inline-flex items-center gap-2 px-2.5 py-2 rounded-lg text-sm font-medium cursor-pointer transition-all shrink-0 ${activeTab === "templates" ? 'bg-indigo-500/10 text-indigo-400' : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'}`}
                 onClick={() => setActiveTab(activeTab === "templates" ? null : "templates")}
               >
-                <LayoutTemplate size={16} /> <span className="hidden xl:inline">Templates</span>
+                <LayoutTemplate size={16} /> <span className="hidden md:inline">Templates</span>
                 {activeTab === "templates" && (
-                  <motion.div layoutId="activeTabWedge" className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 w-6 h-[3px] bg-indigo-500 rounded-t-full" />
+                  <motion.div layoutId="activeTabWedge" className="absolute bottom-0 left-1/2 -translate-x-1/2 w-6 h-[3px] bg-indigo-500 rounded-t-full" />
                 )}
               </button>
             </Tooltip>
@@ -1204,9 +1204,9 @@ function App() {
                 className={`relative inline-flex items-center gap-2 px-2.5 py-2 rounded-lg text-sm font-medium cursor-pointer transition-all shrink-0 ${activeTab === "cheatsheet" ? 'bg-indigo-500/10 text-indigo-400' : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'}`}
                 onClick={() => setActiveTab(activeTab === "cheatsheet" ? null : "cheatsheet")}
               >
-                <Book size={16} /> <span className="hidden xl:inline">Cheatsheet</span>
+                <Book size={16} /> <span className="hidden md:inline">Cheatsheet</span>
                 {activeTab === "cheatsheet" && (
-                  <motion.div layoutId="activeTabWedge" className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 w-6 h-[3px] bg-indigo-500 rounded-t-full" />
+                  <motion.div layoutId="activeTabWedge" className="absolute bottom-0 left-1/2 -translate-x-1/2 w-6 h-[3px] bg-indigo-500 rounded-t-full" />
                 )}
               </button>
             </Tooltip>
@@ -1215,9 +1215,9 @@ function App() {
                 className={`relative inline-flex items-center gap-2 px-2.5 py-2 rounded-lg text-sm font-medium cursor-pointer transition-all shrink-0 ${activeTab === "documentation" ? 'bg-indigo-500/10 text-indigo-400' : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'}`}
                 onClick={() => setActiveTab(activeTab === "documentation" ? null : "documentation")}
               >
-                <Search size={16} /> <span className="hidden xl:inline">Function Explorer</span>
+                <Search size={16} /> <span className="hidden md:inline">Function Explorer</span>
                 {activeTab === "documentation" && (
-                  <motion.div layoutId="activeTabWedge" className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 w-6 h-[3px] bg-indigo-500 rounded-t-full" />
+                  <motion.div layoutId="activeTabWedge" className="absolute bottom-0 left-1/2 -translate-x-1/2 w-6 h-[3px] bg-indigo-500 rounded-t-full" />
                 )}
               </button>
             </Tooltip>

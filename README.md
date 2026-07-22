@@ -280,7 +280,6 @@ The evaluation loop integrates directly with Monaco breakpoints:
 │   │   ├── DocumentationPortal.tsx # Searchable Function Explorer modal & panel with category/prefix filters
 │   │   ├── Debugger.tsx            # Step-by-step debugger with scope variable inspector and call stack
 │   │   ├── Console.tsx             # Interactive, spellcheck-safe command shell & output panel
-│   │   ├── RefactorDiffView.tsx    # Visual side-by-side comparison for suggested code refactors
 │   │   ├── CodeOutlineSidebar.tsx  # Dynamic file content tree showing procedures, let blocks & loops
 │   │   ├── FileExplorer.tsx        # In-browser file explorer with directory structuring & import/export
 │   │   ├── FunctionNavigator.tsx   # Rapid workspace symbol & procedure locator
@@ -291,7 +290,6 @@ The evaluation loop integrates directly with Monaco breakpoints:
 │   │   ├── monaco-config.ts        # Language definition, autocomplete feed, hover provider
 │   │   ├── skillInterpreter.ts     # Client-side Lisp AST interpreter with step debugging
 │   │   ├── manualParser.ts         # Dynamically builds function registry & category maps from manual.txt
-│   │   ├── refactorEngine.ts       # Code scanning rules for automated improvements & fixes
 │   │   └── utils.ts                # Levenshtein distance & custom function signature extractors
 │   ├── data/
 │   │   └── manual.txt              # Standard dictionary of 760+ Cadence functions & usage details

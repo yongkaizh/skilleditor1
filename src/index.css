@@ -25,6 +25,22 @@
   background: rgba(255, 255, 255, 0.2);
 }
 
+.custom-scrollbar::-webkit-scrollbar {
+  height: 6px;
+  width: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+  border: none;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
 .block-boundary-decoration {
   background: rgba(99, 102, 241, 0.2);
   border-left: 3px solid #6366f1;
