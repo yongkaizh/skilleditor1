@@ -3706,3 +3706,1475 @@ l_transform: Transformation list (e.g. list(deltaX:deltaY orientation)).
 newRect = dbCopyObject(rect cv list(0:10 "R0"))
 @desc Copies an existing database shape or instance to a new location, returning the new object's database ID.
 
+
+@function dbCreateViaNet
+@usage dbCreateViaNet(cvId viaDefId l_loc t_rot l_params netObj)
+@category Database Access
+@parameters
+cvId: Target cellview ID.
+viaDefId: Via definition object or name.
+l_loc: Coordinate placement point (x:y).
+t_rot: Rotation orientation (e.g., "R0").
+l_params: Parameter list.
+netObj: Net object.
+@example
+dbCreateViaNet(cv viaDef 0:0 "R0" nil net)
+@desc Creates a via shape attached to a specific net object.
+
+@function dbCreateSnapBoundary
+@usage dbCreateSnapBoundary(cvId l_bBox)
+@category Database Access
+@parameters
+cvId: Target cellview ID.
+l_bBox: Bounding box coordinates list.
+@example
+dbCreateSnapBoundary(cv list(0:0 100:100))
+@desc Creates a snap boundary for place and route tools.
+
+@function dbCreatePRBoundary
+@usage dbCreatePRBoundary(cvId l_points)
+@category Database Access
+@parameters
+cvId: Target cellview ID.
+l_points: List of boundary vertex coordinates.
+@example
+dbCreatePRBoundary(cv list(0:0 0:50 50:50 50:0))
+@desc Creates a Place and Route (PR) boundary polygon in the cellview.
+
+@function dbCreateLayerHeader
+@usage dbCreateLayerHeader(cvId t_layerName)
+@category Database Access
+@parameters
+cvId: Cellview ID.
+t_layerName: Name of the layer.
+@example
+dbCreateLayerHeader(cv "M1")
+@desc Creates a layer header record in the cellview database.
+
+@function dbFindViaDefByName
+@usage dbFindViaDefByName(techId t_viaDefName)
+@category Database Access
+@parameters
+techId: Technology library ID.
+t_viaDefName: Name of the via definition.
+@example
+viaDef = dbFindViaDefByName(tech "M1_M2")
+@desc Finds and returns a via definition object by its name.
+
+@function dbProduceVia
+@usage dbProduceVia(cvId viaDefId l_loc t_rot l_params)
+@category Database Access
+@parameters
+cvId: Cellview ID.
+viaDefId: Via definition ID.
+l_loc: Insertion point.
+t_rot: Rotation.
+l_params: Via parameters.
+@example
+dbProduceVia(cv viaDef 10:10 "R0" nil)
+@desc Generates a via instance from a via definition.
+
+@function dbGetMarkerList
+@usage dbGetMarkerList(cvId)
+@category Database Access
+@parameters
+cvId: Cellview ID.
+@example
+markers = dbGetMarkerList(cv)
+@desc Returns a list of all marker objects in the cellview.
+
+@function dbAddGroupMember
+@usage dbAddGroupMember(d_group d_member)
+@category Database Access
+@parameters
+d_group: Group object.
+d_member: Object to add into group.
+@example
+dbAddGroupMember(grp inst1)
+@desc Adds a database object into a group.
+
+@function dbRemoveGroupMember
+@usage dbRemoveGroupMember(d_group d_member)
+@category Database Access
+@parameters
+d_group: Group object.
+d_member: Object to remove.
+@example
+dbRemoveGroupMember(grp inst1)
+@desc Removes an object from a group.
+
+@function dbSetConnCurrent
+@usage dbSetConnCurrent(cvId [b_status])
+@category Database Access
+@parameters
+cvId: Cellview ID.
+b_status: Boolean status flag.
+@example
+dbSetConnCurrent(cv t)
+@desc Marks the connectivity state of a cellview as current.
+
+@function dbAllCellViews
+@usage dbAllCellViews(t_libName t_cellName)
+@category Database
+@parameters
+t_libName: Library name.
+t_cellName: Cell name.
+@example
+views = dbAllCellViews("myLib" "inv")
+@desc Returns a list of all open cellviews for a given library/cell.
+
+@function dbAllLibCellViews
+@usage dbAllLibCellViews(t_libName)
+@category Database
+@parameters
+t_libName: Library name.
+@example
+views = dbAllLibCellViews("myLib")
+@desc Returns a list of all open cellviews within a specified library.
+
+@function dbIsCellViewModified
+@usage dbIsCellViewModified(cvId)
+@category Database
+@parameters
+cvId: Cellview ID.
+@example
+if(dbIsCellViewModified(cv) then dbSave(cv))
+@desc Checks if a cellview has unsaved in-memory changes.
+
+@function dbSetCellViewModified
+@usage dbSetCellViewModified(cvId [b_flag])
+@category Database
+@parameters
+cvId: Cellview ID.
+b_flag: True/false modified flag.
+@example
+dbSetCellViewModified(cv t)
+@desc Manually sets the modified flag on a cellview.
+
+@function dbWriteSkill
+@usage dbWriteSkill(cvId t_fileName)
+@category Database
+@parameters
+cvId: Cellview ID.
+t_fileName: Target SKILL file path.
+@example
+dbWriteSkill(cv "./gen_layout.il")
+@desc Exports the cellview database objects as runnable SKILL code.
+
+@function dbGetTrueOverlaps
+@usage dbGetTrueOverlaps(cvId l_bBox [l_layer] [l_purpose] [n_depth])
+@category Database Access
+@parameters
+cvId: Target cellview ID.
+l_bBox: Search region.
+l_layer: Optional layer name.
+l_purpose: Optional layer purpose.
+n_depth: Hierarchy depth.
+@example
+objs = dbGetTrueOverlaps(cv list(0:0 10:10) "M1")
+@desc Finds all true geometric overlaps down the hierarchy stack.
+
+@function dbGetCellViewOverlap
+@usage dbGetCellViewOverlap(cvId l_bBox [t_filter])
+@category Database Access
+@parameters
+cvId: Cellview ID.
+l_bBox: Bounding box.
+t_filter: Filter string.
+@example
+dbGetCellViewOverlap(cv list(0:0 5:5))
+@desc Finds objects overlapping a region in the top cellview.
+
+@function dbInvertTransform
+@usage dbInvertTransform(l_transform)
+@category Database Access
+@parameters
+l_transform: Transformation list list(origin orient scale).
+@example
+invXform = dbInvertTransform(list(10:20 "R90" 1.0))
+@desc Computes the inverse coordinate transformation matrix.
+
+@function dbGetInstTransform
+@usage dbGetInstTransform(d_inst)
+@category Database Access
+@parameters
+d_inst: Instance database object.
+@example
+xform = dbGetInstTransform(inst)
+@desc Returns the transformation list (origin, orientation, scale) of an instance.
+
+@function leSetRefPoint
+@usage leSetRefPoint(winId l_point)
+@category Layout Editor
+@parameters
+winId: Window ID.
+l_point: Reference coordinate point.
+@example
+leSetRefPoint(hiGetCurrentWindow() 0:0)
+@desc Sets the reference point coordinate in the layout editor window.
+
+@function leGetRefPoint
+@usage leGetRefPoint(winId)
+@category Layout Editor
+@parameters
+winId: Window ID.
+@example
+pt = leGetRefPoint(hiGetCurrentWindow())
+@desc Retrieves current layout editor reference point.
+
+@function leHiCreateVia
+@usage leHiCreateVia()
+@category Layout Editor
+@parameters
+None
+@example
+leHiCreateVia()
+@desc Launches the interactive Via Creation command tool in Virtuoso.
+
+@function leIsLayerVisible
+@usage leIsLayerVisible(l_lpp)
+@category Layout Editor
+@parameters
+l_lpp: Layer purpose pair list(layer purpose).
+@example
+if(leIsLayerVisible(list("M1" "drawing")) then ...)
+@desc Returns t if the specified Layer Purpose Pair is visible in display.
+
+@function leSetLayerVisible
+@usage leSetLayerVisible(l_lpp b_visible)
+@category Layout Editor
+@parameters
+l_lpp: Layer purpose pair.
+b_visible: Boolean visibility flag.
+@example
+leSetLayerVisible(list("M1" "drawing") t)
+@desc Sets visibility state for a Layer Purpose Pair.
+
+@function leSetLayerValid
+@usage leSetLayerValid(l_lpp b_valid)
+@category Layout Editor
+@parameters
+l_lpp: Layer purpose pair.
+b_valid: Boolean validity flag.
+@example
+leSetLayerValid(list("M2" "drawing") t)
+@desc Sets validity state for a Layer Purpose Pair in LSW palette.
+
+@function leGetValidLayerList
+@usage leGetValidLayerList(techId)
+@category Layout Editor
+@parameters
+techId: Techfile object.
+@example
+layers = leGetValidLayerList(tech)
+@desc Returns list of valid LPPs defined in techfile.
+
+@function leGetVisibleLayerList
+@usage leGetVisibleLayerList(winId)
+@category Layout Editor
+@parameters
+winId: Window ID.
+@example
+visLayers = leGetVisibleLayerList(hiGetCurrentWindow())
+@desc Returns list of visible LPPs in the active layout window.
+
+@function leSetAllLayerVisible
+@usage leSetAllLayerVisible(winId b_visible)
+@category Layout Editor
+@parameters
+winId: Window ID.
+b_visible: Visibility flag.
+@example
+leSetAllLayerVisible(hiGetCurrentWindow() t)
+@desc Toggles visibility of all layers on or off simultaneously.
+
+@function leHiMarkNet
+@usage leHiMarkNet()
+@category Layout Editor
+@parameters
+None
+@example
+leHiMarkNet()
+@desc Launches interactive net connectivity highlighting tool.
+
+@function leHiUnmarkNet
+@usage leHiUnmarkNet()
+@category Layout Editor
+@parameters
+None
+@example
+leHiUnmarkNet()
+@desc Clears layout net connectivity highlights.
+
+@function leHiShowDRCError
+@usage leHiShowDRCError()
+@category Layout Editor
+@parameters
+None
+@example
+leHiShowDRCError()
+@desc Displays interactive DRC error browser window.
+
+@function leLayerAndNot
+@usage leLayerAndNot(cvId l_layer1 l_layer2 l_targetLpp)
+@category Layout Editor
+@parameters
+cvId: Target cellview ID.
+l_layer1: First LPP.
+l_layer2: Subtrahend LPP.
+l_targetLpp: Destination LPP.
+@example
+leLayerAndNot(cv list("M1" "drawing") list("CUT" "drawing") list("M1" "drawing"))
+@desc Performs boolean AND-NOT (cutout) operation on layout shapes.
+
+@function leLayerXor
+@usage leLayerXor(cvId l_layer1 l_layer2 l_targetLpp)
+@category Layout Editor
+@parameters
+cvId: Cellview ID.
+l_layer1: LPP 1.
+l_layer2: LPP 2.
+l_targetLpp: Destination LPP.
+@example
+leLayerXor(cv lpp1 lpp2 targetLpp)
+@desc Performs boolean XOR operation between layer shapes.
+
+@function leChop
+@usage leChop(cvId d_shape l_bBox)
+@category Layout Editor
+@parameters
+cvId: Target cellview ID.
+d_shape: Shape object to slice.
+l_bBox: Bounding box region to cut out.
+@example
+leChop(cv rect list(1:1 2:2))
+@desc Chops a rectangle region out of a layout shape.
+
+@function geGetTopWindow
+@usage geGetTopWindow()
+@category Graphics
+@parameters
+None
+@example
+win = geGetTopWindow()
+@desc Returns window ID of active foreground graphics window.
+
+@function geGetWindowList
+@usage geGetWindowList()
+@category Graphics
+@parameters
+None
+@example
+wins = geGetWindowList()
+@desc Returns list of all active graphics window IDs.
+
+@function geSetWindowCellView
+@usage geSetWindowCellView(winId cvId)
+@category Graphics
+@parameters
+winId: Window ID.
+cvId: Cellview ID.
+@example
+geSetWindowCellView(win cv)
+@desc Binds a cellview to a graphics window display.
+
+@function geOpen
+@usage geOpen([winId] t_mode t_libName t_cellName t_viewName [t_viewType])
+@category Graphics
+@parameters
+winId: Optional target window ID.
+t_mode: Mode ("r"/"a"/"w").
+t_libName: Library name.
+t_cellName: Cell name.
+t_viewName: View name.
+@example
+geOpen(nil "r" "myLib" "inv" "schematic")
+@desc Opens cellview in a new or specified graphics window.
+
+@function geClose
+@usage geClose(winId)
+@category Graphics
+@parameters
+winId: Window ID to close.
+@example
+geClose(win)
+@desc Closes target graphics window.
+
+@function geHiZoomAbsolute
+@usage geHiZoomAbsolute(winId f_scale)
+@category Graphics
+@parameters
+winId: Window ID.
+f_scale: Absolute zoom multiplier.
+@example
+geHiZoomAbsolute(hiGetCurrentWindow() 2.0)
+@desc Sets zoom scale factor in window absolutely.
+
+@function geSetSelectable
+@usage geSetSelectable(l_lpp b_selectable)
+@category Graphics
+@parameters
+l_lpp: LPP list.
+b_selectable: Selectable flag.
+@example
+geSetSelectable(list("M1" "drawing") nil)
+@desc Controls whether objects on an LPP can be interactively selected.
+
+@function geIsSelectable
+@usage geIsSelectable(l_lpp)
+@category Graphics
+@parameters
+l_lpp: LPP list.
+@example
+if(geIsSelectable(lpp) then ...)
+@desc Returns t if specified layer is set as selectable.
+
+@function geGetHierLevel
+@usage geGetHierLevel(winId)
+@category Graphics
+@parameters
+winId: Window ID.
+@example
+lvl = geGetHierLevel(hiGetCurrentWindow())
+@desc Returns current display hierarchy depth limit.
+
+@function geSetHierLevel
+@usage geSetHierLevel(winId n_level)
+@category Graphics
+@parameters
+winId: Window ID.
+n_level: Hierarchy depth integer (0-32).
+@example
+geSetHierLevel(hiGetCurrentWindow() 10)
+@desc Sets hierarchy display expansion depth in layout window.
+
+@function gePush
+@usage gePush(winId d_inst)
+@category Graphics
+@parameters
+winId: Window ID.
+d_inst: Hierarchy instance object.
+@example
+gePush(hiGetCurrentWindow() inst)
+@desc Descends edit context into target instance sub-cellview.
+
+@function gePop
+@usage gePop(winId)
+@category Graphics
+@parameters
+winId: Window ID.
+@example
+gePop(hiGetCurrentWindow())
+@desc Ascends edit context back up one level in design hierarchy.
+
+@function geGetTargetCellView
+@usage geGetTargetCellView(winId)
+@category Graphics
+@parameters
+winId: Window ID.
+@example
+targetCv = geGetTargetCellView(hiGetCurrentWindow())
+@desc Returns cellview currently targeted for editing operations.
+
+@function geSetTargetCellView
+@usage geSetTargetCellView(winId cvId)
+@category Graphics
+@parameters
+winId: Window ID.
+cvId: Cellview ID.
+@example
+geSetTargetCellView(win cv)
+@desc Designates target cellview for active editing commands.
+
+@function geAddSelectBox
+@usage geAddSelectBox(winId l_bBox)
+@category Graphics
+@parameters
+winId: Window ID.
+l_bBox: Bounding box region.
+@example
+geAddSelectBox(hiGetCurrentWindow() list(0:0 10:10))
+@desc Selects all layout objects within rectangular box region.
+
+@function geSubSelectBox
+@usage geSubSelectBox(winId l_bBox)
+@category Graphics
+@parameters
+winId: Window ID.
+l_bBox: Bounding box region.
+@example
+geSubSelectBox(hiGetCurrentWindow() list(0:0 10:10))
+@desc Deselects layout objects within rectangular region.
+
+@function hiCreateTreeTable
+@usage hiCreateTreeTable(?name s_name ?columns l_cols)
+@category User Interface
+@parameters
+?name: Field symbol.
+?columns: Column header definitions.
+@example
+tree = hiCreateTreeTable(?name 'tree ?columns list("Name" "Type" "Status"))
+@desc Creates hierarchical tree view table form component.
+
+@function hiCreateReportField
+@usage hiCreateReportField(?name s_name ?headers l_headers)
+@category User Interface
+@parameters
+?name: Field symbol.
+?headers: Column title strings.
+@example
+rpt = hiCreateReportField(?name 'rpt ?headers list("Net" "Cap (fF)" "Res (ohm)"))
+@desc Creates multi-column report table display widget.
+
+@function hiCreateFormLayout
+@usage hiCreateFormLayout(s_name ?items l_items)
+@category User Interface
+@parameters
+s_name: Layout name symbol.
+?items: List of field widgets.
+@example
+lay = hiCreateFormLayout('lay ?items list(fld1 fld2))
+@desc Defines structured grid layout container for UI fields.
+
+@function hiCreateSliderField
+@usage hiCreateSliderField(?name s_name ?prompt t_prompt ?min n_min ?max n_max)
+@category User Interface
+@parameters
+?name: Field symbol.
+?prompt: Label.
+?min: Minimum value.
+?max: Maximum value.
+@example
+slider = hiCreateSliderField(?name 'sld ?prompt "Opacity:" ?min 0 ?max 100)
+@desc Creates numerical slider input control.
+
+@function hiInsertMenuItem
+@usage hiInsertMenuItem(menuId menuItemId n_index)
+@category User Interface
+@parameters
+menuId: Parent menu ID.
+menuItemId: Item ID.
+n_index: Positional index.
+@example
+hiInsertMenuItem(menu item 1)
+@desc Inserts menu item into menu at specified position.
+
+@function hiDeleteMenuItem
+@usage hiDeleteMenuItem(menuId menuItemId)
+@category User Interface
+@parameters
+menuId: Parent menu ID.
+menuItemId: Item ID.
+@example
+hiDeleteMenuItem(menu item)
+@desc Removes item from custom Cadence menu.
+
+@function hiCreateSeparatorMenuItem
+@usage hiCreateSeparatorMenuItem(?name s_name)
+@category User Interface
+@parameters
+?name: Separator symbol.
+@example
+sep = hiCreateSeparatorMenuItem(?name 'sep1)
+@desc Creates menu divider line item.
+
+@function hiUnregTimer
+@usage hiUnregTimer(timerId)
+@category User Interface
+@parameters
+timerId: Active timer ID.
+@example
+hiUnregTimer(tId)
+@desc Cancels active timer callback.
+
+@function hiSetCommand
+@usage hiSetCommand(t_cmdString)
+@category User Interface
+@parameters
+t_cmdString: Command string.
+@example
+hiSetCommand("leHiCreateRect()")
+@desc Sets current active user command in Virtuoso window.
+
+@function hiGetCommand
+@usage hiGetCommand()
+@category User Interface
+@parameters
+None
+@example
+cmd = hiGetCommand()
+@desc Returns string name of active user command.
+
+@function hiFormDone
+@usage hiFormDone(d_form)
+@category User Interface
+@parameters
+d_form: Form object.
+@example
+hiFormDone(myForm)
+@desc Triggers OK/Done action on dialog form.
+
+@function hiFormCancel
+@usage hiFormCancel(d_form)
+@category User Interface
+@parameters
+d_form: Form object.
+@example
+hiFormCancel(myForm)
+@desc Triggers Cancel action on dialog form.
+
+@function hiFormReset
+@usage hiFormReset(d_form)
+@category User Interface
+@parameters
+d_form: Form object.
+@example
+hiFormReset(myForm)
+@desc Resets all form field values to default states.
+
+@function hiGetFormName
+@usage hiGetFormName(d_form)
+@category User Interface
+@parameters
+d_form: Form object.
+@example
+name = hiGetFormName(myForm)
+@desc Returns symbol name of form object.
+
+@function hiIsFormDisplayed
+@usage hiIsFormDisplayed(d_form)
+@category User Interface
+@parameters
+d_form: Form object.
+@example
+if(hiIsFormDisplayed(myForm) then ...)
+@desc Returns t if target form is currently visible on screen.
+
+@function hiCreateWindow
+@usage hiCreateWindow(l_bBox t_type t_name)
+@category User Interface
+@parameters
+l_bBox: Bounding box.
+t_type: Window type string.
+t_name: Window title.
+@example
+win = hiCreateWindow(list(0:0 800:600) "graphics" "My Custom View")
+@desc Creates new Virtuoso workspace graphics window.
+
+@function hiCloseWindow
+@usage hiCloseWindow(winId)
+@category User Interface
+@parameters
+winId: Window ID.
+@example
+hiCloseWindow(win)
+@desc Closes target window.
+
+@function hiResizeWindow
+@usage hiResizeWindow(winId n_width n_height)
+@category User Interface
+@parameters
+winId: Window ID.
+n_width: Pixel width.
+n_height: Pixel height.
+@example
+hiResizeWindow(win 1024 768)
+@desc Resizes target window dimensions.
+
+@function hiMoveWindow
+@usage hiMoveWindow(winId n_x n_y)
+@category User Interface
+@parameters
+winId: Window ID.
+n_x: Screen X position.
+n_y: Screen Y position.
+@example
+hiMoveWindow(win 100 100)
+@desc Moves window to screen coordinate origin.
+
+@function hiDisplayWindow
+@usage hiDisplayWindow(winId)
+@category User Interface
+@parameters
+winId: Window ID.
+@example
+hiDisplayWindow(win)
+@desc Renders window visible on display.
+
+@function hiSetWindowName
+@usage hiSetWindowName(winId t_title)
+@category User Interface
+@parameters
+winId: Window ID.
+t_title: Title string.
+@example
+hiSetWindowName(win "Layout - top_cell")
+@desc Updates title bar text of target window.
+
+@function hiGetWindowBBox
+@usage hiGetWindowBBox(winId)
+@category User Interface
+@parameters
+winId: Window ID.
+@example
+bBox = hiGetWindowBBox(win)
+@desc Returns pixel bounding box coordinates of window.
+
+@function hiSetWindowBBox
+@usage hiSetWindowBBox(winId l_bBox)
+@category User Interface
+@parameters
+winId: Window ID.
+l_bBox: Screen bounding box list.
+@example
+hiSetWindowBBox(win list(0:0 800:600))
+@desc Sets window position and size simultaneously.
+
+@function hiShowPrompt
+@usage hiShowPrompt(t_promptText)
+@category User Interface
+@parameters
+t_promptText: Prompt message.
+@example
+hiShowPrompt("Select rectangle start point...")
+@desc Displays message string in command status prompt bar.
+
+@function hiSetFilter
+@usage hiSetFilter(t_filterPattern)
+@category User Interface
+@parameters
+t_filterPattern: Glob string.
+@example
+hiSetFilter("*.il")
+@desc Sets global file dialog search filter.
+
+@function hiGetFilter
+@usage hiGetFilter()
+@category User Interface
+@parameters
+None
+@example
+pat = hiGetFilter()
+@desc Returns current file browser glob filter string.
+
+@function schCreateWireLabel
+@usage schCreateWireLabel(cvId wireObj l_pt t_name t_just)
+@category Schematic
+@parameters
+cvId: Cellview ID.
+wireObj: Wire object.
+l_pt: Text placement point.
+t_name: Net name text.
+t_just: Justification string.
+@example
+schCreateWireLabel(cv wire 1:0 "CLK" "lowerLeft")
+@desc Attaches net label text onto schematic wire.
+
+@function schCreateSymbol
+@usage schCreateSymbol(t_libName t_cellName t_viewName)
+@category Schematic
+@parameters
+t_libName: Library name.
+t_cellName: Cell name.
+t_viewName: View name.
+@example
+schCreateSymbol("myLib" "nand2" "symbol")
+@desc Generates schematic symbol view automatically from pin definitions.
+
+@function schHiCreateSymbol
+@usage schHiCreateSymbol()
+@category Schematic
+@parameters
+None
+@example
+schHiCreateSymbol()
+@desc Launches interactive Symbol Generation tool.
+
+@function schHiCreateNoteLabel
+@usage schHiCreateNoteLabel()
+@category Schematic
+@parameters
+None
+@example
+schHiCreateNoteLabel()
+@desc Triggers interactive note label placement command.
+
+@function schHiCreateSheet
+@usage schHiCreateSheet()
+@category Schematic
+@parameters
+None
+@example
+schHiCreateSheet()
+@desc Adds new multi-sheet schematic frame.
+
+@function schHiRoute
+@usage schHiRoute()
+@category Schematic
+@parameters
+None
+@example
+schHiRoute()
+@desc Launches automatic schematic wire routing tool.
+
+@function schHiPlot
+@usage schHiPlot()
+@category Schematic
+@parameters
+None
+@example
+schHiPlot()
+@desc Displays schematic printing and plotting dialog.
+
+@function schHiSymbolise
+@usage schHiSymbolise()
+@category Schematic
+@parameters
+None
+@example
+schHiSymbolise()
+@desc Opens symbol generator options dialog.
+
+@function schExtract
+@usage schExtract(cvId)
+@category Schematic
+@parameters
+cvId: Schematic cellview ID.
+@example
+schExtract(cv)
+@desc Extracts connectivity database for schematic cellview.
+
+@function schSingleSelectPoint
+@usage schSingleSelectPoint(winId l_point)
+@category Schematic
+@parameters
+winId: Window ID.
+l_point: Selection point coordinate.
+@example
+schSingleSelectPoint(hiGetCurrentWindow() 0:0)
+@desc Selects single schematic component at coordinate location.
+
+@function schSelectAll
+@usage schSelectAll(winId)
+@category Schematic
+@parameters
+winId: Window ID.
+@example
+schSelectAll(hiGetCurrentWindow())
+@desc Selects all objects in target schematic window.
+
+@function techGetLP
+@usage techGetLP(techId l_lpp)
+@category Techfile
+@parameters
+techId: Techfile object.
+l_lpp: LPP list.
+@example
+lp = techGetLP(tech list("M1" "drawing"))
+@desc Returns Layer Purpose tech object.
+
+@function techGetLPP
+@usage techGetLPP(techId l_lpp)
+@category Techfile
+@parameters
+techId: Techfile object.
+l_lpp: LPP list.
+@example
+lpp = techGetLPP(tech list("M1" "drawing"))
+@desc Validates and returns layer purpose pair object from technology file.
+
+@function techGetGrid
+@usage techGetGrid(techId)
+@category Techfile
+@parameters
+techId: Techfile object.
+@example
+grid = techGetGrid(tech)
+@desc Returns manufacturing grid resolution value (e.g. 0.001).
+
+@function techFindViaDefByName
+@usage techFindViaDefByName(techId t_viaName)
+@category Techfile
+@parameters
+techId: Techfile object.
+t_viaName: Via name string.
+@example
+vDef = techFindViaDefByName(tech "M1_M2_std")
+@desc Finds via definition in techfile by name.
+
+@function techGetTechLibName
+@usage techGetTechLibName(techId)
+@category Techfile
+@parameters
+techId: Techfile object.
+@example
+libName = techGetTechLibName(tech)
+@desc Returns string name of technology library.
+
+@function techSetLayerValid
+@usage techSetLayerValid(techId l_lpp b_valid)
+@category Techfile
+@parameters
+techId: Techfile object.
+l_lpp: LPP list.
+b_valid: Validity flag.
+@example
+techSetLayerValid(tech lpp t)
+@desc Sets techfile validity state for layer purpose pair.
+
+@function techGetOrderedSpacingRules
+@usage techGetOrderedSpacingRules(techId)
+@category Techfile
+@parameters
+techId: Techfile object.
+@example
+rules = techGetOrderedSpacingRules(tech)
+@desc Returns ordered list of design rule spacing constraints.
+
+@function techGetMinSpacing
+@usage techGetMinSpacing(techId t_layer1 t_layer2)
+@category Techfile
+@parameters
+techId: Techfile object.
+t_layer1: First layer.
+t_layer2: Second layer.
+@example
+minSp = techGetMinSpacing(tech "M1" "M1")
+@desc Returns minimum required spacing rule between two layers.
+
+@function rodConnect
+@usage rodConnect(?rodObj1 rod1 ?handle1 h1 ?rodObj2 rod2 ?handle2 h2)
+@category ROD
+@parameters
+?rodObj1: First object.
+?handle1: First handle string.
+?rodObj2: Second object.
+?handle2: Second handle string.
+@example
+rodConnect(?rodObj1 rect1 ?handle1 "upperRight" ?rodObj2 rect2 ?handle2 "lowerLeft")
+@desc Connects two ROD objects relative to specified handles.
+
+@function rodAssignHandle
+@usage rodAssignHandle(?rodObj rod ?handleName hName ?pt point)
+@category ROD
+@parameters
+?rodObj: ROD object.
+?handleName: Custom handle name.
+?pt: Relative point coordinate.
+@example
+rodAssignHandle(?rodObj rect ?handleName "center" ?pt 1:1)
+@desc Assigns custom named reference handle onto ROD shape.
+
+@function rodGetHandle
+@usage rodGetHandle(d_rodObj t_handleName)
+@category ROD
+@parameters
+d_rodObj: ROD object.
+t_handleName: Handle name.
+@example
+pt = rodGetHandle(rect "center")
+@desc Returns coordinate location of specified named handle.
+
+@function rodUnassignHandle
+@usage rodUnassignHandle(d_rodObj t_handleName)
+@category ROD
+@parameters
+d_rodObj: ROD object.
+t_handleName: Handle name.
+@example
+rodUnassignHandle(rect "center")
+@desc Removes custom handle assignment from ROD object.
+
+@function rodFillBBox
+@usage rodFillBBox(?cvId cvId ?layer lpp ?bBox bBox)
+@category ROD
+@parameters
+?cvId: Cellview ID.
+?layer: LPP.
+?bBox: Region bounding box.
+@example
+rodFillBBox(?cvId cv ?layer list("M1" "drawing") ?bBox list(0:0 10:10))
+@desc Fills bounding box region with ROD rectangular shapes.
+
+@function symstr
+@usage symstr(s_symbol)
+@category Strings
+@parameters
+s_symbol: Symbol object.
+@example
+symstr('mySym) ; Returns "mySym"
+@desc Converts SKILL symbol to string representation.
+
+@function strsym
+@usage strsym(t_string)
+@category Strings
+@parameters
+t_string: String text.
+@example
+strsym("mySym") ; Returns 'mySym
+@desc Converts string into interned SKILL symbol.
+
+@function getplist
+@usage getplist(s_symbol)
+@category Language
+@parameters
+s_symbol: Target symbol.
+@example
+plist = getplist('mySym)
+@desc Returns full property list attached to symbol.
+
+@function strcmp
+@usage strcmp(t_str1 t_str2)
+@category Strings
+@parameters
+t_str1: First string.
+t_str2: Second string.
+@example
+strcmp("abc" "def") ; Returns -1
+@desc Performs lexicographical string comparison (-1, 0, or 1).
+
+@function pcmp
+@usage pcmp(g_obj1 g_obj2)
+@category Language
+@parameters
+g_obj1: First object.
+g_obj2: Second object.
+@example
+pcmp(1 2) ; Returns -1
+@desc General polymorphic comparison function for integers, floats, strings, and symbols.
+
+@function expt
+@usage expt(f_base f_power)
+@category Math
+@parameters
+f_base: Base number.
+f_power: Power exponent.
+@example
+expt(2 3) ; Returns 8
+@desc Raises base number to power exponent.
+
+@function random
+@usage random([n_max])
+@category Math
+@parameters
+n_max: Optional upper bound.
+@example
+r = random(100)
+@desc Returns pseudo-random integer up to n_max.
+
+@function fixp
+@usage fixp(g_val)
+@category Language
+@parameters
+g_val: Value.
+@example
+if(fixp(x) then ...)
+@desc Returns t if argument is a fixed integer.
+
+@function copyFile
+@usage copyFile(t_src t_dst)
+@category File I/O
+@parameters
+t_src: Source file path.
+t_dst: Destination file path.
+@example
+copyFile("source.il" "backup.il")
+@desc Copies file contents to destination path.
+
+@function getDirFiles
+@usage getDirFiles(t_dirPath)
+@category File I/O
+@parameters
+t_dirPath: Directory path.
+@example
+files = getDirFiles(".")
+@desc Returns list of file names in specified directory.
+
+@function ipcBeginProcess
+@usage ipcBeginProcess(t_cmd [t_host] [s_dataHandler] [s_errHandler] [s_exitHandler] [t_logFile])
+@category Inter-Process Communication
+@parameters
+t_cmd: Shell command line string.
+t_host: Remote host.
+s_dataHandler: Output callback function symbol.
+s_errHandler: Error callback symbol.
+s_exitHandler: Exit callback symbol.
+t_logFile: Log file path.
+@example
+pid = ipcBeginProcess("ls -l" "" 'dataCb 'errCb 'exitCb "./out.log")
+@desc Spawns an asynchronous background child shell process.
+
+@function ipcWriteProcess
+@usage ipcWriteProcess(ipcId t_data)
+@category Inter-Process Communication
+@parameters
+ipcId: Process ID.
+t_data: String data to write to process stdin.
+@example
+ipcWriteProcess(pid "exit\n")
+@desc Writes string data to child process standard input.
+
+@function ipcReadProcess
+@usage ipcReadProcess(ipcId [n_timeout])
+@category Inter-Process Communication
+@parameters
+ipcId: Process ID.
+n_timeout: Timeout in seconds.
+@example
+output = ipcReadProcess(pid 5)
+@desc Reads stdout data from asynchronous IPC child process.
+
+@function ipcWait
+@usage ipcWait(ipcId)
+@category Inter-Process Communication
+@parameters
+ipcId: Process ID.
+@example
+ipcWait(pid)
+@desc Blocks execution until specified background IPC process completes.
+
+@function ipcKillAllProcesses
+@usage ipcKillAllProcesses()
+@category Inter-Process Communication
+@parameters
+None
+@example
+ipcKillAllProcesses()
+@desc Terminates all active IPC child processes spawned by Virtuoso session.
+
+@function ddGetObjList
+@usage ddGetObjList([d_obj])
+@category Design Data
+@parameters
+d_obj: Parent design data object (library/cell).
+@example
+libs = ddGetObjList()
+@desc Returns list of design data objects at specified level.
+
+@function ddIsObjWritable
+@usage ddIsObjWritable(d_ddObj)
+@category Design Data
+@parameters
+d_ddObj: Design data object.
+@example
+if(ddIsObjWritable(cvObj) then ...)
+@desc Checks file permissions and lock status to determine if design object is writable.
+
+@function ddSetForcedLib
+@usage ddSetForcedLib(t_libName)
+@category Design Data
+@parameters
+t_libName: Library name string.
+@example
+ddSetForcedLib("myLib")
+@desc Forces design data manager to prioritize specified library.
+
+@function ddRelease
+@usage ddRelease(d_ddObj)
+@category Design Data
+@parameters
+d_ddObj: Design data object.
+@example
+ddRelease(ddObj)
+@desc Releases design data object handle and frees memory.
+
+@function cdfGetInstCDF
+@usage cdfGetInstCDF(d_inst)
+@category Component Description Format
+@parameters
+d_inst: Instance object.
+@example
+cdf = cdfGetInstCDF(inst)
+@desc
+Retrieves the Component Description Format (CDF) structure for a given instance object.
+
+@function cdfGetCellCDF
+@usage cdfGetCellCDF(d_cell)
+@category Component Description Format
+@parameters
+d_cell: Cell object or library/cell ID.
+@example
+cdf = cdfGetCellCDF(ddGetObj("myLib" "nand2"))
+@desc
+Returns the cell-level Component Description Format (CDF) structure.
+
+@function cdfCreateParam
+@usage cdfCreateParam(d_cdf ?name t_name ?type t_type ?prompt t_prompt [?defValue g_val])
+@category Component Description Format
+@parameters
+d_cdf: CDF object.
+?name: Parameter symbol name.
+?type: Parameter type ("string", "boolean", "int", "float", "cyclic", etc.).
+?prompt: Display label string.
+?defValue: Default value.
+@example
+cdfCreateParam(cdf ?name "w" ?type "string" ?prompt "Width" ?defValue "1u")
+@desc
+Creates a new CDF parameter entry for a component.
+
+@function cdfDeleteParam
+@usage cdfDeleteParam(d_cdfParam)
+@category Component Description Format
+@parameters
+d_cdfParam: CDF parameter object.
+@example
+cdfDeleteParam(param)
+@desc
+Deletes a parameter from a CDF structure.
+
+@function cdfGetParamByName
+@usage cdfGetParamByName(d_cdf t_paramName)
+@category Component Description Format
+@parameters
+d_cdf: CDF object.
+t_paramName: Name of the parameter.
+@example
+p = cdfGetParamByName(cdf "w")
+@desc
+Finds and returns a CDF parameter object by parameter name.
+
+@function cdfCopyCDF
+@usage cdfCopyCDF(d_srcCDF d_destCDF)
+@category Component Description Format
+@parameters
+d_srcCDF: Source CDF object.
+d_destCDF: Destination CDF object.
+@example
+cdfCopyCDF(srcCDF destCDF)
+@desc
+Copies all parameter and prompt settings from one CDF structure to another.
+
+@function ipcKillProcess
+@usage ipcKillProcess(cid_process)
+@category Inter-Process Communication
+@parameters
+cid_process: Process ID object returned by ipcBeginProcess.
+@example
+ipcKillProcess(pid)
+@desc
+Terminates a running background process.
+
+@function ipcWaitForProcess
+@usage ipcWaitForProcess(cid_process [n_timeout])
+@category Inter-Process Communication
+@parameters
+cid_process: Process ID object.
+n_timeout: Optional wait timeout.
+@example
+ipcWaitForProcess(pid)
+@desc
+Blocks execution until the specified IPC process completes.
+
+@function ipcGetExitStatus
+@usage ipcGetExitStatus(cid_process)
+@category Inter-Process Communication
+@parameters
+cid_process: Process ID object.
+@example
+code = ipcGetExitStatus(pid)
+@desc
+Returns the integer exit code of a completed process.
+
+@function ddDeleteObj
+@usage ddDeleteObj(d_ddObj)
+@category Data Manager
+@parameters
+d_ddObj: DD object handle to delete.
+@example
+ddDeleteObj(cellObj)
+@desc
+Deletes a library, cell, or view object from disk and design manager.
+
+@function dbPointArrayToBBox
+@usage dbPointArrayToBBox(l_points)
+@category Database Access
+@parameters
+l_points: List of point coordinates.
+@example
+bBox = dbPointArrayToBBox(list(0:0 5:10 12:2))
+@desc
+Computes the minimal bounding box enclosing a list of points.
+
+@function dbLayerOr
+@usage dbLayerOr(cvId l_destLpp l_shapes1 [l_shapes2])
+@category Database Access
+@parameters
+cvId: Target cellview ID.
+l_destLpp: Destination layer purpose pair.
+l_shapes1: Shape list.
+l_shapes2: Optional second shape list.
+@example
+dbLayerOr(cv list("M1" "drawing") shapes1 shapes2)
+@desc
+Performs boolean OR union on shape lists into destination layer.
+
+@function dbLayerAnd
+@usage dbLayerAnd(cvId l_destLpp l_shapes1 l_shapes2)
+@category Database Access
+@parameters
+cvId: Target cellview ID.
+l_destLpp: Destination LPP.
+l_shapes1: First shape list.
+l_shapes2: Second shape list.
+@example
+dbLayerAnd(cv list("M1" "drawing") shapes1 shapes2)
+@desc
+Performs boolean AND intersection on shape lists.
+
+@function dbLayerAndNot
+@usage dbLayerAndNot(cvId l_destLpp l_shapes1 l_shapes2)
+@category Database Access
+@parameters
+cvId: Target cellview ID.
+l_destLpp: Destination LPP.
+l_shapes1: Source shapes.
+l_shapes2: Cutout shapes.
+@example
+dbLayerAndNot(cv destLpp shapes cutoutShapes)
+@desc
+Performs boolean AND-NOT difference (subtraction) between shape lists.
+
+@function dbLayerXor
+@usage dbLayerXor(cvId l_destLpp l_shapes1 l_shapes2)
+@category Database Access
+@parameters
+cvId: Target cellview ID.
+l_destLpp: Destination LPP.
+l_shapes1: Shape list 1.
+l_shapes2: Shape list 2.
+@example
+dbLayerXor(cv destLpp shapes1 shapes2)
+@desc
+Performs boolean XOR operation between shape lists.
+
+@function dbLayerSize
+@usage dbLayerSize(cvId l_destLpp l_shapes f_dimension)
+@category Database Access
+@parameters
+cvId: Target cellview ID.
+l_destLpp: Destination LPP.
+l_shapes: Source shape list.
+f_dimension: Expansion/sizing amount (positive or negative).
+@example
+dbLayerSize(cv destLpp shapes 0.05)
+@desc
+Expands or shrinks layout shapes by specified distance dimension.
+
+@function dbCopyShape
+@usage dbCopyShape(d_shape cvId [l_transform])
+@category Database Access
+@parameters
+d_shape: Shape database object.
+cvId: Target cellview ID.
+l_transform: Optional transformation list.
+@example
+newShape = dbCopyShape(rect targetCv)
+@desc
+Duplicates layout shape into specified cellview with optional transformation.
+
+@function dbMoveShape
+@usage dbMoveShape(d_shape cvId l_transform)
+@category Database Access
+@parameters
+d_shape: Shape object.
+cvId: Target cellview.
+l_transform: Transformation list.
+@example
+dbMoveShape(rect cv list(10:0 "R0" 1.0))
+@desc
+Moves or transforms existing layout shape object.
+
+@function dbDeleteObjectList
+@usage dbDeleteObjectList(l_objects)
+@category Database Access
+@parameters
+l_objects: List of database objects.
+@example
+dbDeleteObjectList(shapes)
+@desc
+Deletes a list of database objects in a single batch operation.
+
+@function dbFindPinByName
+@usage dbFindPinByName(cvId t_pinName)
+@category Database Access
+@parameters
+cvId: Cellview ID.
+t_pinName: Pin name string.
+@example
+pin = dbFindPinByName(cv "INP")
+@desc
+Finds pin object in cellview by name.
+
+@function geSelectObject
+@usage geSelectObject(d_obj)
+@category Graphics
+@parameters
+d_obj: Database object to select.
+@example
+geSelectObject(inst)
+@desc
+Adds a database object to the current active window selection set.
+
+@function geDeselectObject
+@usage geDeselectObject(d_obj)
+@category Graphics
+@parameters
+d_obj: Database object to deselect.
+@example
+geDeselectObject(inst)
+@desc
+Removes an object from the active window selection set.
+
+@function geHiZoomIn
+@usage geHiZoomIn([winId])
+@category Graphics
+@parameters
+winId: Optional window ID.
+@example
+geHiZoomIn()
+@desc
+Triggers interactive Zoom In command in graphics window.
+
+@function geHiZoomOut
+@usage geHiZoomOut([winId])
+@category Graphics
+@parameters
+winId: Optional window ID.
+@example
+geHiZoomOut()
+@desc
+Triggers interactive Zoom Out command in graphics window.
+
+@function geHiZoomFit
+@usage geHiZoomFit([winId])
+@category Graphics
+@parameters
+winId: Optional window ID.
+@example
+geHiZoomFit()
+@desc
+Zooms display view to fit cellview bounding box bounds.
+
+@function hiCreateMenu
+@usage hiCreateMenu(?name s_name ?title t_title ?items l_items)
+@category User Interface
+@parameters
+?name: Menu symbol name.
+?title: Header title.
+?items: List of menu item objects.
+@example
+menu = hiCreateMenu(?name 'myMenu ?title "Tools" ?items list(item1 item2))
+@desc
+Creates a pull-down or pop-up menu widget.
+
+@function hiAddMenuItem
+@usage hiAddMenuItem(d_menu d_menuItem)
+@category User Interface
+@parameters
+d_menu: Target menu object.
+d_menuItem: Menu item object to append.
+@example
+hiAddMenuItem(menu item)
+@desc
+Appends a menu item to an existing menu structure.
+

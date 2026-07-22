@@ -1239,12 +1239,12 @@ function App() {
                 )}
               </button>
             </Tooltip>
-            <Tooltip content="Search 780+ Cadence API functions" position="bottom" delay={0.5} disabled={activeTab === "documentation"}>
+            <Tooltip content="Search 760+ Cadence API functions by category" position="bottom" delay={0.5} disabled={activeTab === "documentation"}>
               <button
                 className={`relative inline-flex items-center gap-2 px-2.5 py-2 rounded-lg text-sm font-medium cursor-pointer transition-all ${activeTab === "documentation" ? 'bg-indigo-500/10 text-indigo-400' : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'}`}
                 onClick={() => setActiveTab(activeTab === "documentation" ? null : "documentation")}
               >
-                <Search size={16} /> <span className="hidden xl:inline">API Finder</span>
+                <Search size={16} /> <span className="hidden xl:inline">Function Explorer</span>
                 {activeTab === "documentation" && (
                   <motion.div layoutId="activeTabWedge" className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 w-6 h-[3px] bg-indigo-500 rounded-t-full" />
                 )}
