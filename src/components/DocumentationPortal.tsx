@@ -350,7 +350,7 @@ export const DocumentationPortal: React.FC<DocumentationPortalProps> = ({
                 </div>
 
                 {/* Category Navigation Section with Accordion and Vertical Scroll List */}
-                <div className="space-y-2">
+                <div className="space-y-2 relative">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                       <SlidersHorizontal size={11} className="text-indigo-400" />
@@ -374,11 +374,11 @@ export const DocumentationPortal: React.FC<DocumentationPortalProps> = ({
                   <AnimatePresence>
                     {isCategoryAccordionOpen && (
                       <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        exit={{ opacity: 0, height: 0 }}
+                        initial={{ opacity: 0, height: 0, y: -10 }}
+                        animate={{ opacity: 1, height: 'auto', y: 0 }}
+                        exit={{ opacity: 0, height: 0, y: -10 }}
                         transition={{ duration: 0.2 }}
-                        className="overflow-hidden bg-[#0d0f14] border border-white/10 rounded-2xl p-2.5 space-y-2 shadow-xl"
+                        className="absolute top-full left-0 right-0 mt-2 z-50 overflow-hidden bg-[#0d0f14] border border-white/20 rounded-xl p-2.5 space-y-2 shadow-2xl backdrop-blur-xl"
                       >
                         {/* Category Filter Search Input inside Accordion */}
                         <div className="relative">
