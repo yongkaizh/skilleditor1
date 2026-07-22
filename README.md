@@ -205,23 +205,23 @@ The Cadence SKILL Web IDE includes a client-side compiler and AST interpreter (`
 
 ```mermaid
 flowchart TD
-    A[SKILL Source Code<br/>Lisp or Infix C-style] --> B[1. Lexical Analysis<br/>tokenize]
-    B -->|Token Stream| C[2. Infix & Arrow Resolver<br/>Transform to S-Expressions]
-    C -->|Canonical S-Exprs| D[3. AST Parser<br/>parseCode]
-    D -->|Abstract Syntax Tree| E[4 & 5. Interpreter Engine<br/>evalExpr]
+    A["SKILL Source Code<br/>Lisp or Infix C-style"] --> B["1. Lexical Analysis<br/>tokenize"]
+    B -->|Token Stream| C["2. Infix & Arrow Resolver<br/>Transform to S-Expressions"]
+    C -->|Canonical S-Exprs| D["3. AST Parser<br/>parseCode"]
+    D -->|Abstract Syntax Tree| E["4 & 5. Interpreter Engine<br/>evalExpr"]
 
-    subgraph Scope & Environment Model
-        G[Global Environment<br/>StdLib & Cadence DB Stubs]
-        L[Local Lexical Frame<br/>let / prog / procedure scope]
+    subgraph SCOPE["Scope & Environment Model"]
+        G["Global Environment<br/>StdLib & Cadence DB Stubs"]
+        L["Local Lexical Frame<br/>let / prog / procedure scope"]
         G <--> L
     end
 
-    E <--> Scope & Environment Model
+    E <--> SCOPE
 
     E --> F{Breakpoint Line?}
-    F -- Yes --> H[6. Interactive Debugger<br/>Pause Promise & Scope Inspection]
+    F -->|Yes| H["6. Interactive Debugger<br/>Pause Promise & Scope Inspection"]
     H -->|Step / Resume| E
-    F -- No --> I[Execution Output<br/>Console & Return Values]
+    F -->|No| I["Execution Output<br/>Console & Return Values"]
 ```
 
 ### 1. Lexical Analysis (Tokenizer)
