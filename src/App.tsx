@@ -2,8 +2,6 @@ import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   FolderOpen,
-  FileArchive,
-  FileDown,
   Copy,
   Undo2,
   Redo2,
@@ -25,8 +23,6 @@ import {
   ListTree,
   Keyboard,
 } from "lucide-react";
-import JSZip from 'jszip';
-import { saveAs } from 'file-saver';
 import { get, set } from 'idb-keyval';
 import { v4 as uuidv4 } from 'uuid';
 import { EditorPane } from "./components/EditorPane";
@@ -188,8 +184,6 @@ function App() {
       return f;
     }));
   };
-
-  const [isCopied, setIsCopied] = useState(false);
 
   useEffect(() => {
     localStorage.setItem("cadence-workspace-auto-save", autoSaveEnabled.toString());
@@ -741,29 +735,6 @@ function App() {
     showToast(`Challenge "${challenge.title}" ${isSolution ? 'Solution' : ''} initialized!`);
   };
 
-    const handleDownloadCurrent = () => {
-    const activeF = files.find(f => f.id === activeFileId);
-    if (!activeF) return;
-    const blob = new Blob([activeF.content], { type: "text/plain" });
-    saveAs(blob, activeF.name);
-      };
-
-  const handleDownloadProject = async () => {
-    const zip = new JSZip();
-    files.forEach(f => {
-      zip.file(f.name, f.content);
-    });
-    const content = await zip.generateAsync({ type: "blob" });
-    saveAs(content, "skill_project.zip");
-      };
-
-  const handleCopy = () => {
-    navigator.clipboard.writeText(content);
-    setIsCopied(true);
-    setTimeout(() => setIsCopied(false), 2000);
-  };
-
-  
   const handleVerify = async () => {
     if (isSimulating || !activeFile) return;
     const activeChallenge = challenges.find(c => activeFile.name === `${c.id}.il` || activeFile.name === `${c.id}-sol.il`);
@@ -1148,8 +1119,8 @@ function App() {
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-[#0b0c10] text-[#e2e8f0] font-sans">
-      <header className="h-14 md:h-16 shrink-0 bg-[#0a0b0f] border-b border-white/[0.04] flex items-center justify-between px-3 md:px-6 z-40 relative">
-        <div className="flex items-center gap-2 md:gap-4 shrink overflow-hidden">
+      <header className="h-14 md:h-16 shrink-0 bg-[#0a0b0f] border-b border-white/[0.04] flex items-center justify-between px-3 md:px-6 z-40 relative gap-2">
+        <div className="flex items-center gap-2 md:gap-4 shrink min-w-0 flex-1">
           <div className="font-semibold text-base tracking-tight flex items-center gap-2 md:gap-3 text-white shrink-0">
             <div className="bg-indigo-500/10 p-1.5 rounded-lg border border-indigo-500/20">
               <Sparkles className="text-indigo-400" size={18} />
@@ -1157,10 +1128,10 @@ function App() {
             <span className="hidden md:inline">Cadence SKILL IDE</span><span className="md:hidden">SKILL</span>
           </div>
           
-          <div className="flex items-center gap-1 md:gap-2 overflow-x-auto no-scrollbar shrink">
+          <div className="flex items-center gap-1 md:gap-2 overflow-x-auto no-scrollbar shrink min-w-0">
             <Tooltip content="Browse project files" position="bottom" delay={0.5} disabled={activeTab === "files"}>
               <button
-                className={`relative inline-flex items-center gap-2 px-2.5 py-2 rounded-lg text-sm font-medium cursor-pointer transition-all ${activeTab === "files" ? 'bg-indigo-500/10 text-indigo-400' : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'}`}
+                className={`relative inline-flex items-center gap-2 px-2.5 py-2 rounded-lg text-sm font-medium cursor-pointer transition-all shrink-0 ${activeTab === "files" ? 'bg-indigo-500/10 text-indigo-400' : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'}`}
                 onClick={() => setActiveTab(activeTab === "files" ? null : "files")}
               >
                 <FolderOpen size={16} /> <span className="hidden lg:inline">Explorer</span>
@@ -1172,7 +1143,7 @@ function App() {
             
             <Tooltip content="Search project" position="bottom" delay={0.5} disabled={activeTab === "search"}>
               <button
-                className={`relative inline-flex items-center gap-2 px-2.5 py-2 rounded-lg text-sm font-medium cursor-pointer transition-all ${activeTab === "search" ? 'bg-indigo-500/10 text-indigo-400' : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'}`}
+                className={`relative inline-flex items-center gap-2 px-2.5 py-2 rounded-lg text-sm font-medium cursor-pointer transition-all shrink-0 ${activeTab === "search" ? 'bg-indigo-500/10 text-indigo-400' : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'}`}
                 onClick={() => setActiveTab(activeTab === "search" ? null : "search")}
               >
                 <Search size={16} /> <span className="hidden lg:inline">Search</span>
@@ -1183,7 +1154,7 @@ function App() {
             </Tooltip>
             <Tooltip content="Code Outline" position="bottom" delay={0.5} disabled={activeTab === "outline"}>
               <button
-                className={`relative inline-flex items-center gap-2 px-2.5 py-2 rounded-lg text-sm font-medium cursor-pointer transition-all ${activeTab === "outline" ? 'bg-indigo-500/10 text-indigo-400' : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'}`}
+                className={`relative inline-flex items-center gap-2 px-2.5 py-2 rounded-lg text-sm font-medium cursor-pointer transition-all shrink-0 ${activeTab === "outline" ? 'bg-indigo-500/10 text-indigo-400' : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'}`}
                 onClick={() => setActiveTab(activeTab === "outline" ? null : "outline")}
               >
                 <ListTree size={16} /> <span className="hidden lg:inline">Outline</span>
@@ -1194,7 +1165,7 @@ function App() {
             </Tooltip>
             <Tooltip content="Interactive tutorials and lessons" position="bottom" delay={0.5} disabled={activeTab === "tour"}>
               <button
-                className={`relative inline-flex items-center gap-2 px-2.5 py-2 rounded-lg text-sm font-medium cursor-pointer transition-all ${activeTab === "tour" ? 'bg-indigo-500/10 text-indigo-400' : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'}`}
+                className={`relative inline-flex items-center gap-2 px-2.5 py-2 rounded-lg text-sm font-medium cursor-pointer transition-all shrink-0 ${activeTab === "tour" ? 'bg-indigo-500/10 text-indigo-400' : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'}`}
                 onClick={() => setActiveTab(activeTab === "tour" ? null : "tour")}
               >
                 <GraduationCap size={16} /> <span className="hidden lg:inline">Lessons</span>
@@ -1205,7 +1176,7 @@ function App() {
             </Tooltip>
             <Tooltip content="Algorithmic EDA challenges" position="bottom" delay={0.5} disabled={activeTab === "challenges"}>
               <button
-                className={`relative inline-flex items-center gap-2 px-2.5 py-2 rounded-lg text-sm font-medium cursor-pointer transition-all ${activeTab === "challenges" ? 'bg-rose-500/10 text-rose-400' : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'}`}
+                className={`relative inline-flex items-center gap-2 px-2.5 py-2 rounded-lg text-sm font-medium cursor-pointer transition-all shrink-0 ${activeTab === "challenges" ? 'bg-rose-500/10 text-rose-400' : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'}`}
                 onClick={() => setActiveTab(activeTab === "challenges" ? null : "challenges")}
               >
                 <Trophy size={16} /> <span className="hidden lg:inline">Challenges</span>
@@ -1219,7 +1190,7 @@ function App() {
 
             <Tooltip content="Load SKILL recipe templates" position="bottom" delay={0.5} disabled={activeTab === "templates"}>
               <button
-                className={`relative inline-flex items-center gap-2 px-2.5 py-2 rounded-lg text-sm font-medium cursor-pointer transition-all ${activeTab === "templates" ? 'bg-indigo-500/10 text-indigo-400' : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'}`}
+                className={`relative inline-flex items-center gap-2 px-2.5 py-2 rounded-lg text-sm font-medium cursor-pointer transition-all shrink-0 ${activeTab === "templates" ? 'bg-indigo-500/10 text-indigo-400' : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'}`}
                 onClick={() => setActiveTab(activeTab === "templates" ? null : "templates")}
               >
                 <LayoutTemplate size={16} /> <span className="hidden xl:inline">Templates</span>
@@ -1230,7 +1201,7 @@ function App() {
             </Tooltip>
             <Tooltip content="SKILL syntax cheatsheet" position="bottom" delay={0.5} disabled={activeTab === "cheatsheet"}>
               <button
-                className={`relative inline-flex items-center gap-2 px-2.5 py-2 rounded-lg text-sm font-medium cursor-pointer transition-all ${activeTab === "cheatsheet" ? 'bg-indigo-500/10 text-indigo-400' : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'}`}
+                className={`relative inline-flex items-center gap-2 px-2.5 py-2 rounded-lg text-sm font-medium cursor-pointer transition-all shrink-0 ${activeTab === "cheatsheet" ? 'bg-indigo-500/10 text-indigo-400' : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'}`}
                 onClick={() => setActiveTab(activeTab === "cheatsheet" ? null : "cheatsheet")}
               >
                 <Book size={16} /> <span className="hidden xl:inline">Cheatsheet</span>
@@ -1241,7 +1212,7 @@ function App() {
             </Tooltip>
             <Tooltip content="Search 760+ Cadence API functions by category" position="bottom" delay={0.5} disabled={activeTab === "documentation"}>
               <button
-                className={`relative inline-flex items-center gap-2 px-2.5 py-2 rounded-lg text-sm font-medium cursor-pointer transition-all ${activeTab === "documentation" ? 'bg-indigo-500/10 text-indigo-400' : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'}`}
+                className={`relative inline-flex items-center gap-2 px-2.5 py-2 rounded-lg text-sm font-medium cursor-pointer transition-all shrink-0 ${activeTab === "documentation" ? 'bg-indigo-500/10 text-indigo-400' : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'}`}
                 onClick={() => setActiveTab(activeTab === "documentation" ? null : "documentation")}
               >
                 <Search size={16} /> <span className="hidden xl:inline">Function Explorer</span>
@@ -1285,29 +1256,6 @@ function App() {
           >
             <Settings size={16} className="text-slate-400" />
             <span className="hidden md:inline">Settings</span>
-          </button>
-          <button 
-            onClick={handleDownloadCurrent}
-            title="Export Current File"
-            className="flex items-center gap-2 text-slate-300 hover:text-white hover:bg-white/5 px-2.5 py-1.5 rounded-lg text-sm font-medium transition-colors"
-          >
-            <FileDown size={16} className="text-amber-400" />
-            <span className="hidden md:inline">Export File</span>
-          </button>
-          <button 
-            onClick={handleDownloadProject}
-            title="Export Entire Project as ZIP"
-            className="flex items-center gap-2 text-slate-300 hover:text-white hover:bg-white/5 px-2.5 py-1.5 rounded-lg text-sm font-medium transition-colors"
-          >
-            <FileArchive size={16} className="text-amber-400" />
-            <span className="hidden md:inline">Export Project</span>
-          </button>
-          <button 
-            onClick={handleCopy}
-            className="flex items-center gap-2 text-slate-300 hover:text-white hover:bg-white/5 px-2.5 py-1.5 rounded-lg text-sm font-medium transition-colors"
-          >
-            {isCopied ? <CheckCircle2 size={16} className="text-emerald-400" /> : <Copy size={16} className="text-emerald-400" />}
-            <span className="hidden md:inline">{isCopied ? "Copied" : "Copy"}</span>
           </button>
         </div>
       </header>
