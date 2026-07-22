@@ -13,7 +13,10 @@ import {
   Check,
   Sparkles,
   List,
-  Grid
+  Grid,
+  ChevronDown,
+  Filter,
+  SlidersHorizontal
 } from 'lucide-react';
 
 interface DocumentationPortalProps {
@@ -89,6 +92,7 @@ export const DocumentationPortal: React.FC<DocumentationPortalProps> = ({
   const [activePrefix, setActivePrefix] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'flat' | 'grouped'>('flat');
   const [copiedText, setCopiedText] = useState<string | null>(null);
+  const [showCategoryGrid, setShowCategoryGrid] = useState<boolean>(false);
 
   // Compute category counts
   const categoryCounts = useMemo(() => {
@@ -327,8 +331,70 @@ export const DocumentationPortal: React.FC<DocumentationPortalProps> = ({
                   )}
                 </div>
 
+                {/* Category Dropdown & Grid Toggle Bar */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <div className="relative flex-1">
+                      <SlidersHorizontal size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                      <select
+                        value={selectedCategory}
+                        onChange={(e) => setSelectedCategory(e.target.value)}
+                        className="w-full bg-[#181c26] border border-white/10 rounded-xl pl-9 pr-8 py-1.5 text-xs text-white appearance-none focus:outline-none focus:border-indigo-500/60 cursor-pointer font-medium"
+                      >
+                        {categories.map((cat) => (
+                          <option key={cat} value={cat} className="bg-[#12141a] text-slate-200">
+                            {cat} ({categoryCounts[cat] || 0})
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                    </div>
+
+                    <button
+                      onClick={() => setShowCategoryGrid(!showCategoryGrid)}
+                      className={`px-2.5 py-1.5 rounded-xl border text-xs font-semibold flex items-center gap-1.5 shrink-0 transition-all cursor-pointer ${
+                        showCategoryGrid 
+                          ? 'bg-indigo-600 text-white border-indigo-500 shadow-sm' 
+                          : 'bg-white/[0.04] border-white/10 text-slate-300 hover:bg-white/10'
+                      }`}
+                      title={showCategoryGrid ? "Collapse categories to single line" : "Show all category badges as grid"}
+                    >
+                      <Filter size={12} />
+                      <span className="text-[10px] uppercase tracking-wider">{showCategoryGrid ? 'Hide Grid' : 'All Categories'}</span>
+                    </button>
+                  </div>
+
+                  {/* Category Pills (Grid or Horizontal Row) */}
+                  <div className={`transition-all ${
+                    showCategoryGrid 
+                      ? 'flex flex-wrap gap-1.5 p-2 bg-black/20 border border-white/5 rounded-xl max-h-48 overflow-y-auto custom-scrollbar' 
+                      : 'flex overflow-x-auto gap-1.5 pb-1 custom-scrollbar'
+                  }`}>
+                    {categories.map((cat) => {
+                      const count = categoryCounts[cat] || 0;
+                      const isSelected = selectedCategory === cat;
+                      return (
+                        <button
+                          key={cat}
+                          onClick={() => setSelectedCategory(cat)}
+                          className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all whitespace-nowrap border flex items-center gap-1.5 cursor-pointer ${
+                            isSelected
+                              ? "bg-indigo-500/20 border-indigo-500/50 text-indigo-300 shadow-sm ring-1 ring-indigo-500/30"
+                              : "bg-white/[0.02] border-white/[0.06] text-slate-400 hover:text-slate-200 hover:bg-white/[0.06]"
+                          }`}
+                        >
+                          <span>{cat}</span>
+                          <span className={`px-1.5 py-0.2 text-[9px] rounded-full font-mono ${isSelected ? 'bg-indigo-500/30 text-indigo-200' : 'bg-white/5 text-slate-500'}`}>
+                            {count}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
                 {/* Prefix Filter Chips */}
-                <div className="flex items-center gap-1 overflow-x-auto no-scrollbar pt-0.5">
+                <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
                   <span className="text-[9px] text-slate-500 font-bold uppercase tracking-widest shrink-0 pr-1">Prefix:</span>
                   {PREFIX_FILTERS.map(prefix => {
                     const isActive = activePrefix === prefix;
@@ -336,7 +402,7 @@ export const DocumentationPortal: React.FC<DocumentationPortalProps> = ({
                       <button
                         key={prefix}
                         onClick={() => setActivePrefix(isActive ? null : prefix)}
-                        className={`px-2 py-0.5 rounded-md font-mono text-[10px] font-medium transition-all whitespace-nowrap border ${
+                        className={`px-2 py-0.5 rounded-md font-mono text-[10px] font-medium transition-all whitespace-nowrap border cursor-pointer ${
                           isActive 
                             ? 'bg-indigo-500 text-white border-indigo-400 shadow-sm' 
                             : 'bg-white/[0.03] border-white/5 text-slate-400 hover:text-slate-200 hover:bg-white/10'
@@ -349,40 +415,16 @@ export const DocumentationPortal: React.FC<DocumentationPortalProps> = ({
                   {activePrefix && (
                     <button
                       onClick={() => setActivePrefix(null)}
-                      className="text-[9px] text-rose-400 hover:text-rose-300 ml-1 font-semibold underline shrink-0"
+                      className="text-[9px] text-rose-400 hover:text-rose-300 ml-1 font-semibold underline shrink-0 cursor-pointer"
                     >
                       Clear
                     </button>
                   )}
                 </div>
 
-                {/* Category Pills with Count Badges */}
-                <div className="flex overflow-x-auto gap-1.5 pb-0.5 no-scrollbar mask-linear-fade-right">
-                  {categories.map((cat) => {
-                    const count = categoryCounts[cat] || 0;
-                    const isSelected = selectedCategory === cat;
-                    return (
-                      <button
-                        key={cat}
-                        onClick={() => setSelectedCategory(cat)}
-                        className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all whitespace-nowrap border flex items-center gap-1.5 ${
-                          isSelected
-                            ? "bg-indigo-500/20 border-indigo-500/40 text-indigo-300 shadow-sm"
-                            : "bg-white/[0.02] border-white/[0.06] text-slate-400 hover:text-slate-200 hover:bg-white/[0.05]"
-                        }`}
-                      >
-                        <span>{cat}</span>
-                        <span className={`px-1.5 py-0.2 text-[9px] rounded-full font-mono ${isSelected ? 'bg-indigo-500/30 text-indigo-200' : 'bg-white/5 text-slate-500'}`}>
-                          {count}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-
                 {/* Filter Summary Status */}
                 <div className="flex items-center justify-between text-[10px] text-slate-500 font-mono pt-1">
-                  <span>Showing {filteredFns.length} functions</span>
+                  <span>Showing {filteredFns.length} functions {selectedCategory !== "All" && `in ${selectedCategory}`}</span>
                   {(selectedCategory !== "All" || searchQuery || activePrefix) && (
                     <button 
                       onClick={() => {
@@ -390,7 +432,7 @@ export const DocumentationPortal: React.FC<DocumentationPortalProps> = ({
                         setSearchQuery("");
                         setActivePrefix(null);
                       }}
-                      className="text-indigo-400 hover:underline cursor-pointer"
+                      className="text-indigo-400 hover:underline cursor-pointer font-semibold"
                     >
                       Reset filters
                     </button>
