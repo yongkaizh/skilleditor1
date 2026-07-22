@@ -159,7 +159,7 @@ Every keypress in the IDE triggers a debounced linting cycle that checks syntax 
    [ Loop Code Text ]                                  [ Scan identifiers ]
             │                                                  │
             ├─► '(' ─► Push Stack                              ├─► Cadence Prefix? (db, le, hi, ge, tech, rod)
-            ├─► ')' ─► Pop Stack                               │   └──► Verify against 780+ dictionary functions
+            ├─► ')' ─► Pop Stack                               │   └──► Verify against 760+ dictionary functions
             │                                                  │
      (Stack Empty?)                                            ├─► Known function or local variable?
     /              \                                           │   └──► No ──► Run Levenshtein (Distance <= 3)
@@ -190,7 +190,7 @@ Every keypress in the IDE triggers a debounced linting cycle that checks syntax 
   - Variable-to-parameter count verification by matching calls against signature declarations.
   - Levenshtein-distance typo correction recommending real-world CAD API methods if you mistype them.
   - Cadence API prefix checker (`db`, `le`, `ge`, `hi`, `tech`, `rod`) keeping your code standardized.
-- **📚 Dynamic Documentation Engine**: Seamlessly searches, filters, and loads descriptions for over 760 Cadence API functions.
+- **📚 Dynamic Documentation & Function Explorer**: Search, filter, and inspect over 760+ Cadence SKILL API functions with real-time category filtering (Database Access, Layout, UI, IPC, CDF, Schematic, Graphics, etc.), prefix chips (`db*`, `le*`, `ge*`, `hi*`, `sch*`, `cdf*`, `ipc*`), flat/grouped view modes, and 1-click code insertion.
 - **🕵️ Expert Automated Code Refactoring**:
   - Automatically identifies missing `db*` API namespace qualifiers.
   - Cleans up and structures nested `let((var1 var2) ...)` lists according to best-practice formatting rules.
@@ -277,15 +277,20 @@ The evaluation loop integrates directly with Monaco breakpoints:
 ├── src/
 │   ├── components/
 │   │   ├── EditorPane.tsx          # Wrapper around Monaco Editor, housing the live linter
+│   │   ├── DocumentationPortal.tsx # Searchable Function Explorer modal & panel with category/prefix filters
+│   │   ├── Debugger.tsx            # Step-by-step debugger with scope variable inspector and call stack
 │   │   ├── Console.tsx             # Interactive, spellcheck-safe command shell & output panel
 │   │   ├── RefactorDiffView.tsx    # Visual side-by-side comparison for suggested code refactors
 │   │   ├── CodeOutlineSidebar.tsx  # Dynamic file content tree showing procedures, let blocks & loops
 │   │   ├── FileExplorer.tsx        # In-browser file explorer with directory structuring & import/export
+│   │   ├── FunctionNavigator.tsx   # Rapid workspace symbol & procedure locator
+│   │   ├── ChallengeHub.tsx        # SKILL practice problems with automatic code validation
+│   │   ├── TemplateGallery.tsx     # Standard IC design script templates (DRC, LVS, PCells)
 │   │   └── SearchSidebar.tsx       # Global search-and-replace tool targeting project scripts
 │   ├── editor/
 │   │   ├── monaco-config.ts        # Language definition, autocomplete feed, hover provider
 │   │   ├── skillInterpreter.ts     # Client-side Lisp AST interpreter with step debugging
-│   │   ├── manualParser.ts         # Dynamically builds interactive hover cards from manual.txt
+│   │   ├── manualParser.ts         # Dynamically builds function registry & category maps from manual.txt
 │   │   ├── refactorEngine.ts       # Code scanning rules for automated improvements & fixes
 │   │   └── utils.ts                # Levenshtein distance & custom function signature extractors
 │   ├── data/
@@ -331,15 +336,23 @@ The evaluation loop integrates directly with Monaco breakpoints:
 
 ## 📖 Appending the Documentation Manual
 
-The intelligence behind Monaco's hover tooltips and autocomplete registry is powered entirely by the text database located in `src/data/manual.txt`.
+The intelligence behind Monaco's hover tooltips, autocomplete registry, and Function Explorer is powered entirely by the text database located in `src/data/manual.txt`.
 
 To register a new custom API or standard Cadence function, append its signature to the text file using this standard format:
 
 ```text
 @function dbCreateLabel
 @usage dbCreateLabel(cvId layer bbox text justify orient font height)
-@example dbCreateLabel(cv list("M1" "drawing") 0:0 "VSS" "centerLeft" "R0" "roman" 0.5)
-@desc Creates a physical label element in the layout view on a specific layer with text parameters.
+@category Database Access
+@parameters
+cvId: Target cellview ID.
+layer: Layer purpose pair e.g. ("M1" "drawing").
+bbox: Point list or bounding box.
+text: Label string content.
+@example
+dbCreateLabel(cv list("M1" "drawing") 0:0 "VSS" "centerLeft" "R0" "roman" 0.5)
+@desc
+Creates a physical label element in the layout view on a specific layer with text parameters.
 ```
 
 The system automatically parses and injects newly added functions on the fly—no rebuild required!
